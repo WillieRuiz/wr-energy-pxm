@@ -1,0 +1,37 @@
+{
+  "screen1": {
+    "headline": "Calculate your backup in 2 minutes",
+    "subtitle": "Power that doesn't quit.",
+    "name_label": "Name",
+    "whatsapp_label": "WhatsApp",
+    "email_label": "Email (optional)",
+    "next_button": "Next",
+    "privacy": "We'll only use your info to contact you.",
+    "error_nombre": "Name must be at least 2 characters.",
+    "error_whatsapp": "Enter a valid phone number.",
+    "error_email": "Enter a valid email address."
+  },
+  "screen2": {
+    "title": "What equipment do you need to back up?",
+    "col_equipment": "Equipment",
+    "col_qty": "Qty.",
+    "col_demand": "Demand (W)",
+    "select_equipment": "Select equipment",
+    "add_row": "Add row",
+    "calculate_button": "Calculate"
+  },
+  "screen3": {
+    "title": "Your recommended system",
+    "summary_title": "Selected equipment",
+    "metric_demand": "Total demand",
+    "metric_power": "System power",
+    "metric_capacity": "Required capacity",
+    "hours_label": "Hours of backup",
+    "recommended": "Recommended",
+    "cta_button": "I'm interested",
+    "victron_placeholder": "Custom quote — talk to us.",
+    "custom_quote_notice": "Your needs exceed our standard catalog. We'll reach out with a custom proposal.",
+    "loading": "Calculating...",
+    "disclaimer": "Prices shown are for reference only. The final cost may vary depending on the existing electrical installation conditions, infrastructure requirements, and other project-specific factors. An on-site technical assessment is required for an accurate quote."
+  }
+}

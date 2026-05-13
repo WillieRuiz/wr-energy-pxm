@@ -1,0 +1,135 @@
+# CLAUDE.md
+
+This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
+
+## Project Overview
+
+**WR Energy PMX** — A 3-screen mobile-first web app that helps non-technical users calculate their energy backup needs, captures them as leads, and redirects them to WhatsApp for conversion.
+
+Stack: React + Vite (frontend) · FastAPI (backend) · Google Sheets API (data store)
+
+**User flow:** Lead Capture (Screen 1) → Equipment Selection (Screen 2) → Results + WhatsApp redirect (Screen 3)
+
+---
+
+## Dev Commands
+
+### Backend
+```bash
+cd backend
+# Windows:
+venv\Scripts\activate
+# Mac/Linux:
+source venv/bin/activate
+
+uvicorn app.main:app --reload --port 8000
+```
+
+API docs auto-generated at `http://localhost:8000/docs`.
+
+### Frontend
+```bash
+cd frontend
+npm install
+npm run dev      # Vite at http://localhost:5173
+npm run build    # Production build → dist/
+npm run preview  # Preview production build locally
+```
+
+### Environment Setup
+- Copy `backend/.env.example` → `backend/.env`. Required vars: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `WHATSAPP_NUMBER`, `FRONTEND_URL`.
+- Copy `frontend/.env.example` → `frontend/.env`. Required vars: `VITE_API_URL=http://localhost:8000`, `VITE_WHATSAPP_NUMBER`.
+- Place the Google Service Account JSON at `backend/credentials/service_account.json` (gitignored).
+
+---
+
+## Architecture
+
+### Backend (`backend/app/`)
+
+Three route modules map 1:1 to the three API endpoints:
+- `routes/equipment.py` → `GET /get-equipment` — reads `equipos` sheet
+- `routes/systems.py` → `GET /get-systems` — reads `sistemas` sheet
+- `routes/leads.py` → `POST /save-lead` — appends to **both** `leads` and `equipos_lead` sheets (two writes per request)
+
+`services/sheets_service.py` has two distinct readers:
+- `read_sheet(sheet_name)` — generic: row 0 is headers, rows 1+ are data. Used for `equipos`.
+- `read_systems_sheet()` — custom parser for `sistemas`: skips header rows by scanning for a known brand name in column 1. Columns are read **by index position** (0–11), not by header name. If the sheet column order changes, this breaks silently.
+
+`services/calculator.py` is pure Python with no I/O — it is called from the `/get-systems` route after fetching systems from Sheets.
+
+`config.py` loads `.env` via `python-dotenv` and exposes typed settings.
+
+### Frontend (`frontend/src/`)
+
+State is managed by a single `CalculatorContext` (Context API) that holds: lead data, equipment rows, catalogs loaded at app mount, calculation results, hours-of-backup setting, and current screen number. All three screens read/write this shared context — no prop drilling.
+
+- `hooks/useCalculator.js` — wraps context for screen components
+- `hooks/useApi.js` — fetch wrapper with loading/error state
+- `services/api.js` — typed functions calling the three backend endpoints
+- `utils/calculator.js` — frontend mirror of the Python calculation engine (see below)
+- `utils/whatsapp.js` — builds the pre-filled WhatsApp URL from results
+- `i18n/` — i18next config + `es.json` / `en.json`; language persisted in localStorage
+
+Screen 2's equipment table auto-calculates `Demanda (W) = cantidad × potencia_w` inline (non-editable). Screen 3 recalculates in real time when the user changes "Hours of backup" (debounce 300 ms).
+
+### Data (Google Sheets)
+
+Single workbook with **four** tabs: `equipos`, `sistemas`, `leads`, `equipos_lead`. The backend reads `equipos` and `sistemas` on demand; it appends to `leads` (summary row) and `equipos_lead` (one row per equipment item) on `POST /save-lead`. See `docs/google-sheets-setup.md` for Service Account permissions setup.
+
+---
+
+## Calculation Engine
+
+**Critical:** The calculation logic is intentionally duplicated — `backend/app/services/calculator.py` (used at lead-save time) and `frontend/src/utils/calculator.js` (used for real-time Screen 3 updates). Both must be kept in sync. If you change a formula or constant in one, change it in the other.
+
+The key algorithm is **"Immediate Superior"** system selection:
+
+```
+total_demand_w   = Σ (cantidad × potencia_w)
+system_power_w   = total_demand_w × 0.70
+battery_kwh      = (system_power_w × hours_backup) / 1000 × 0.40
+```
+*(The 0.40 factor represents the real-use factor during backup per project spec.)*
+
+**System selection rules:**
+1. Filter by brand (Ecoflow or Enphase separately).
+2. From candidates where `almacenamiento >= required_kwh` AND `potencia × 1000 >= required_w`, pick the one with **smallest capacity** (closest above). Tiebreak: lowest price.
+   - Note: `potencia` in the sheet is in **kW**, demand is in **W** — multiply by 1000 before comparing.
+3. If no candidate qualifies, return the largest system of that brand with `needs_custom_quote: true`.
+4. Victron+Pytes is a UI placeholder only (no backend selection logic needed).
+
+`recommend_systems()` / `recommendSystems()` is the orchestrator in each implementation.
+
+---
+
+## Styling
+
+Tailwind with custom brand tokens (defined in `tailwind.config.js`):
+
+| Token | Hex |
+|-------|-----|
+| `azul-tormenta` | `#1B2A4A` |
+| `amarillo-solar` | `#F4C430` |
+| `carbon` | `#1A1A1A` |
+| `hueso` | `#F2F2F2` |
+
+Fonts: `font-display` (Barlow Condensed, headlines) · `font-body` (Inter) · `font-mono` (JetBrains Mono, numeric data like kWh/W). All loaded via Google Fonts in `index.html`.
+
+Mobile-first: design at 375px baseline, scale up at `sm:` (640px), `md:` (768px), `lg:` (1024px). The equipment table on Screen 2 becomes vertical cards below 640px.
+
+---
+
+## Key Constraints
+
+- **Bilingual:** All UI strings go through i18next — no hardcoded Spanish or English text in components.
+- **CORS:** Backend allows only the origin specified by `FRONTEND_URL` in `.env`.
+- **WhatsApp redirect:** The "Me interesa" button both POSTs to `/save-lead` AND opens `wa.me/{VITE_WHATSAPP_NUMBER}?text=...` with URL-encoded pre-filled message. Both actions happen on the same click.
+- `email` is optional on the lead form; Pydantic validates format only if provided (`Optional[EmailStr]`).
+
+## Debug Endpoints
+
+Temporary Sheet-inspection routes (do not remove while debugging data ingestion):
+- `GET /debug/sheet-tabs` — lists all tab names in the workbook
+- `GET /debug/sistemas-raw` — returns first 4 raw rows of `sistemas`
+- `GET /debug/equipos-headers` — returns parsed column headers of `equipos`

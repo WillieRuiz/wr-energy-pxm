@@ -1,0 +1,37 @@
+{
+  "screen1": {
+    "headline": "Calcula tu respaldo en 2 minutos",
+    "subtitle": "Energía que no se apaga.",
+    "name_label": "Nombre",
+    "whatsapp_label": "WhatsApp",
+    "email_label": "Email (opcional)",
+    "next_button": "Siguiente",
+    "privacy": "Solo usaremos tus datos para contactarte.",
+    "error_nombre": "El nombre debe tener al menos 2 caracteres.",
+    "error_whatsapp": "Ingresa un número de teléfono válido.",
+    "error_email": "Ingresa un correo electrónico válido."
+  },
+  "screen2": {
+    "title": "¿Qué equipos necesitas respaldar?",
+    "col_equipment": "Equipo",
+    "col_qty": "Cant.",
+    "col_demand": "Demanda (W)",
+    "select_equipment": "Selecciona un equipo",
+    "add_row": "Agregar fila",
+    "calculate_button": "Calcular"
+  },
+  "screen3": {
+    "title": "Tu sistema recomendado",
+    "summary_title": "Equipos seleccionados",
+    "metric_demand": "Demanda total",
+    "metric_power": "Potencia sistema",
+    "metric_capacity": "Capacidad necesaria",
+    "hours_label": "Horas de respaldo",
+    "recommended": "Recomendado",
+    "cta_button": "Me interesa",
+    "victron_placeholder": "Cotización personalizada — habla con nosotros.",
+    "custom_quote_notice": "Tu necesidad excede nuestro catálogo estándar. Te contactaremos con una propuesta a medida.",
+    "loading": "Calculando...",
+    "disclaimer": "Los precios mostrados son referenciales. El costo final puede variar según las condiciones de la instalación eléctrica existente, adecuaciones de infraestructura y otros factores específicos de cada proyecto. Para obtener una cotización exacta, es necesario realizar un levantamiento técnico en sitio."
+  }
+}
