@@ -1,4 +1,5 @@
 import os
+import json
 import google.auth
 from googleapiclient.discovery import build
 from google.oauth2 import service_account
@@ -8,14 +9,16 @@ _SCOPES = ["https://www.googleapis.com/auth/spreadsheets"]
 
 
 def _get_service():
-    sa_path = GOOGLE_SERVICE_ACCOUNT_JSON
-    if sa_path and os.path.exists(sa_path):
-        # JSON key file available (personal GCP project or explicitly provided)
-        creds = service_account.Credentials.from_service_account_file(sa_path, scopes=_SCOPES)
+    sa_value = GOOGLE_SERVICE_ACCOUNT_JSON
+    if sa_value and sa_value.strip().startswith("{"):
+        # Env var contains the JSON content directly (Railway/production)
+        info = json.loads(sa_value)
+        creds = service_account.Credentials.from_service_account_info(info, scopes=_SCOPES)
+    elif sa_value and os.path.exists(sa_value):
+        # Env var is a file path (local dev)
+        creds = service_account.Credentials.from_service_account_file(sa_value, scopes=_SCOPES)
     else:
-        # Fall back to Application Default Credentials:
-        #   local dev  → run: gcloud auth application-default login
-        #   Cloud Run  → service account attached to the instance, no key needed
+        # Fall back to Application Default Credentials
         creds, _ = google.auth.default(scopes=_SCOPES)
     return build("sheets", "v4", credentials=creds)
 
