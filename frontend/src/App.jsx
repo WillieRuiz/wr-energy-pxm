@@ -2,12 +2,15 @@ import { CalculatorProvider } from './context/CalculatorContext.jsx'
 import { useCalculator } from './hooks/useCalculator.js'
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
+import Screen0_Landing from './components/screens/Screen0_Landing.jsx'
 import Screen1_LeadCapture from './components/screens/Screen1_LeadCapture.jsx'
 import Screen2_Equipment from './components/screens/Screen2_Equipment.jsx'
 import Screen3_Results from './components/screens/Screen3_Results.jsx'
 
 function AppContent() {
   const { currentScreen } = useCalculator()
+
+  if (currentScreen === 0) return <Screen0_Landing />
 
   return (
     <div className="min-h-screen bg-hueso flex flex-col">

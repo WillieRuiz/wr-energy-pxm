@@ -12,7 +12,7 @@ export function CalculatorProvider({ children }) {
   const [results, setResults] = useState(null)
   const [equipmentCatalog, setEquipmentCatalog] = useState([])
   const [systemsCatalog, setSystemsCatalog] = useState([])
-  const [currentScreen, setCurrentScreen] = useState(1)
+  const [currentScreen, setCurrentScreen] = useState(0)
 
   useEffect(() => {
     getEquipment()
