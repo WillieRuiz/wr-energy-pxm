@@ -4,5 +4,5 @@
   publish = "dist"
 
 [build.environment]
-  VITE_API_URL         = "https://wr-energy-production.up.railway.app"
+  VITE_API_URL         = "https://wr-energy-pxm-production-08ec.up.railway.app"
   VITE_WHATSAPP_NUMBER = "525575155669"
