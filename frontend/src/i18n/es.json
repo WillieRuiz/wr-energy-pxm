@@ -1,24 +1,28 @@
 {
   "screen1": {
-    "headline": "Calcula tu respaldo en 2 minutos",
-    "subtitle": "Energía que no se apaga.",
-    "name_label": "Nombre",
-    "whatsapp_label": "WhatsApp",
-    "email_label": "Email (opcional)",
-    "next_button": "Siguiente",
-    "privacy": "Solo usaremos tus datos para contactarte.",
-    "error_nombre": "El nombre debe tener al menos 2 caracteres.",
-    "error_whatsapp": "Ingresa un número de teléfono válido.",
-    "error_email": "Ingresa un correo electrónico válido."
+    "title": "¿Qué equipos necesitas respaldar?",
+    "subtitle": "Selecciona tus equipos y cuántas horas de respaldo necesitas.",
+    "add_row": "Agregar equipo",
+    "hours_label": "Horas de respaldo",
+    "calculate_button": "Calcular"
   },
   "screen2": {
-    "title": "¿Qué equipos necesitas respaldar?",
     "col_equipment": "Equipo",
     "col_qty": "Cant.",
     "col_demand": "Demanda (W)",
     "select_equipment": "Selecciona un equipo",
-    "add_row": "Agregar fila",
-    "calculate_button": "Calcular"
+    "metric_demand": "Demanda",
+    "metric_capacity": "Banco de baterías",
+    "headline": "¿A dónde te enviamos tu resultado?",
+    "subtitle": "Te contactaremos por WhatsApp con tu propuesta personalizada.",
+    "name_label": "Nombre",
+    "whatsapp_label": "WhatsApp",
+    "email_label": "Email (opcional)",
+    "cta_button": "Ver mi resultado en WhatsApp",
+    "privacy": "Solo usaremos tus datos para contactarte.",
+    "error_nombre": "El nombre debe tener al menos 2 caracteres.",
+    "error_whatsapp": "Ingresa un número de teléfono válido.",
+    "error_email": "Ingresa un correo electrónico válido."
   },
   "screen3": {
     "title": "Tu sistema recomendado",

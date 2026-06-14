@@ -1,24 +1,28 @@
 {
   "screen1": {
-    "headline": "Calculate your backup in 2 minutes",
-    "subtitle": "Power that doesn't quit.",
-    "name_label": "Name",
-    "whatsapp_label": "WhatsApp",
-    "email_label": "Email (optional)",
-    "next_button": "Next",
-    "privacy": "We'll only use your info to contact you.",
-    "error_nombre": "Name must be at least 2 characters.",
-    "error_whatsapp": "Enter a valid phone number.",
-    "error_email": "Enter a valid email address."
+    "title": "What equipment do you need to back up?",
+    "subtitle": "Select your appliances and how many hours of backup you need.",
+    "add_row": "Add equipment",
+    "hours_label": "Hours of backup",
+    "calculate_button": "Calculate"
   },
   "screen2": {
-    "title": "What equipment do you need to back up?",
     "col_equipment": "Equipment",
     "col_qty": "Qty.",
     "col_demand": "Demand (W)",
     "select_equipment": "Select equipment",
-    "add_row": "Add row",
-    "calculate_button": "Calculate"
+    "metric_demand": "Demand",
+    "metric_capacity": "Battery bank",
+    "headline": "Where should we send your result?",
+    "subtitle": "We'll contact you on WhatsApp with your personalized proposal.",
+    "name_label": "Name",
+    "whatsapp_label": "WhatsApp",
+    "email_label": "Email (optional)",
+    "cta_button": "See my result on WhatsApp",
+    "privacy": "We'll only use your info to contact you.",
+    "error_nombre": "Name must be at least 2 characters.",
+    "error_whatsapp": "Enter a valid phone number.",
+    "error_email": "Enter a valid email address."
   },
   "screen3": {
     "title": "Your recommended system",

@@ -31,15 +31,18 @@ API docs auto-generated at `http://localhost:8000/docs`.
 ```bash
 cd frontend
 npm install
-npm run dev      # Vite at http://localhost:5173
+npm run dev      # Vite at http://localhost:5174
 npm run build    # Production build → dist/
 npm run preview  # Preview production build locally
 ```
 
+There are no linting or test commands — no ESLint, Vitest, or pytest are configured.
+
 ### Environment Setup
 - Copy `backend/.env.example` → `backend/.env`. Required vars: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `WHATSAPP_NUMBER`, `FRONTEND_URL`.
 - Copy `frontend/.env.example` → `frontend/.env`. Required vars: `VITE_API_URL=http://localhost:8000`, `VITE_WHATSAPP_NUMBER`.
-- Place the Google Service Account JSON at `backend/credentials/service_account.json` (gitignored).
+- `GOOGLE_SERVICE_ACCOUNT_JSON` accepts **either** a file path (`./credentials/service_account.json`) **or** the raw JSON content as a string (used on Railway). `sheets_service._get_service()` detects which by checking if the value starts with `{`. Falls back to Application Default Credentials if neither resolves.
+- Optional backend vars (have defaults): `PORT` (default `8000`), `ENVIRONMENT` (default `development`).
 
 ---
 
@@ -54,7 +57,7 @@ Three route modules map 1:1 to the three API endpoints:
 
 `services/sheets_service.py` has two distinct readers:
 - `read_sheet(sheet_name)` — generic: row 0 is headers, rows 1+ are data. Used for `equipos`.
-- `read_systems_sheet()` — custom parser for `sistemas`: skips header rows by scanning for a known brand name in column 1. Columns are read **by index position** (0–11), not by header name. If the sheet column order changes, this breaks silently.
+- `read_systems_sheet()` — custom parser for `sistemas`: skips header rows by scanning for a known brand name in column 1 using the `_KNOWN_BRANDS` set (`{"ecoflow", "enphase", "victron", "pytes"}`). Columns are read **by index position** (0–11), not by header name. If the sheet column order changes, this breaks silently. **If a new brand is added to the sheet, it must also be added to `_KNOWN_BRANDS` (line 59) or its rows will be silently ignored.**
 
 `services/calculator.py` is pure Python with no I/O — it is called from the `/get-systems` route after fetching systems from Sheets.
 
@@ -126,6 +129,10 @@ Mobile-first: design at 375px baseline, scale up at `sm:` (640px), `md:` (768px)
 - **CORS:** Backend allows only the origin specified by `FRONTEND_URL` in `.env`.
 - **WhatsApp redirect:** The "Me interesa" button both POSTs to `/save-lead` AND opens `wa.me/{VITE_WHATSAPP_NUMBER}?text=...` with URL-encoded pre-filled message. Both actions happen on the same click.
 - `email` is optional on the lead form; Pydantic validates format only if provided (`Optional[EmailStr]`).
+
+## Other Endpoints
+
+- `GET /health` — returns `{"status": "ok"}`, used by Railway for liveness checks.
 
 ## Debug Endpoints
 
