@@ -4,11 +4,11 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## Project Overview
 
-**WR Energy PMX** — A 3-screen mobile-first web app that helps non-technical users calculate their energy backup needs, captures them as leads, and redirects them to WhatsApp for conversion.
+**WR Energy PMX** — A 4-screen mobile-first web app that helps non-technical users calculate their energy backup needs, captures them as leads, and redirects them to WhatsApp for conversion.
 
 Stack: React + Vite (frontend) · FastAPI (backend) · Google Sheets API (data store)
 
-**User flow:** Lead Capture (Screen 1) → Equipment Selection (Screen 2) → Results + WhatsApp redirect (Screen 3)
+**User flow:** Landing (Screen 0) → Lead Capture (Screen 1) → Equipment Selection (Screen 2) → Results + WhatsApp redirect (Screen 3)
 
 ---
 
@@ -53,11 +53,18 @@ There are no linting or test commands — no ESLint, Vitest, or pytest are confi
 Three route modules map 1:1 to the three API endpoints:
 - `routes/equipment.py` → `GET /get-equipment` — reads `equipos` sheet
 - `routes/systems.py` → `GET /get-systems` — reads `sistemas` sheet
-- `routes/leads.py` → `POST /save-lead` — appends to **both** `leads` and `equipos_lead` sheets (two writes per request)
+- `routes/leads.py` → `POST /save-lead` — appends one row to `leads` + one row per equipment item to `equipos_lead`; returns `{ "ok": true, "lead_id": "<8-char hex>" }`
 
 `services/sheets_service.py` has two distinct readers:
 - `read_sheet(sheet_name)` — generic: row 0 is headers, rows 1+ are data. Used for `equipos`.
 - `read_systems_sheet()` — custom parser for `sistemas`: skips header rows by scanning for a known brand name in column 1 using the `_KNOWN_BRANDS` set (`{"ecoflow", "enphase", "victron", "pytes"}`). Columns are read **by index position** (0–11), not by header name. If the sheet column order changes, this breaks silently. **If a new brand is added to the sheet, it must also be added to `_KNOWN_BRANDS` (line 59) or its rows will be silently ignored.**
+
+Column mapping for `sistemas` (by index):
+```
+0  sistema name  |  1  marca  |  2  almacenamiento (kWh)  |  3  potencia (kW)  |  4  phases
+5  MXN subtotal  |  6  MXN IVA  |  7  MXN final price
+8  USD subtotal  |  9  USD IVA  |  10  USD final price  |  11  USD/Wh
+```
 
 `services/calculator.py` is pure Python with no I/O — it is called from the `/get-systems` route after fetching systems from Sheets.
 
@@ -65,7 +72,9 @@ Three route modules map 1:1 to the three API endpoints:
 
 ### Frontend (`frontend/src/`)
 
-State is managed by a single `CalculatorContext` (Context API) that holds: lead data, equipment rows, catalogs loaded at app mount, calculation results, hours-of-backup setting, and current screen number. All three screens read/write this shared context — no prop drilling.
+`App.jsx` is the top-level router — it wraps everything in `CalculatorProvider` and conditionally renders the current screen. **Screen 0 renders without the shared Header/Footer layout**; screens 1–3 share the `Header` + `Footer` wrapper.
+
+State is managed by a single `CalculatorContext` (`context/CalculatorContext.jsx`) that holds: lead data, equipment rows, catalogs loaded at app mount, calculation results, hours-of-backup setting, and current screen number (starts at 0). All screens read/write this shared context — no prop drilling.
 
 - `hooks/useCalculator.js` — wraps context for screen components
 - `hooks/useApi.js` — fetch wrapper with loading/error state
@@ -97,12 +106,24 @@ battery_kwh      = (system_power_w × hours_backup) / 1000 × 0.40
 
 **System selection rules:**
 1. Filter by brand (Ecoflow or Enphase separately).
-2. From candidates where `almacenamiento >= required_kwh` AND `potencia × 1000 >= required_w`, pick the one with **smallest capacity** (closest above). Tiebreak: lowest price.
+2. From candidates where `almacenamiento >= required_kwh` AND `potencia × 1000 >= required_w`, pick the one with **smallest capacity** (closest above). Tiebreak: lowest `usd_precio`.
    - Note: `potencia` in the sheet is in **kW**, demand is in **W** — multiply by 1000 before comparing.
 3. If no candidate qualifies, return the largest system of that brand with `needs_custom_quote: true`.
 4. Victron+Pytes is a UI placeholder only (no backend selection logic needed).
 
 `recommend_systems()` / `recommendSystems()` is the orchestrator in each implementation.
+
+---
+
+## Pydantic Models (`backend/app/models/schemas.py`)
+
+`System` reflects the actual `sistemas` sheet fields:
+- `sistema` (str), `marca` (str), `almacenamiento` (kWh, float), `potencia` (kW, float), `phases` (int), `mxn_precio` (float), `usd_precio` (float), `usd_wh` (float)
+
+`LeadInput` includes both lead contact data and enriched calculation results:
+- Contact: `nombre`, `whatsapp`, `email` (optional)
+- Result summary: `sistema_recomendado`, `costo_total`, `demanda_total_w`, `potencia_necesaria_w`, `capacidad_necesaria_kwh`, `horas_respaldo`
+- Equipment list: `equipos: list[EquipmentItem]` (each has `equipo`, `cantidad`, `potencia_w`, `demanda_w`)
 
 ---
 
