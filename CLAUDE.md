@@ -89,6 +89,15 @@ Screen 2's equipment table auto-calculates `Demanda (W) = cantidad × potencia_w
 
 Single workbook with **four** tabs: `equipos`, `sistemas`, `leads`, `equipos_lead`. The backend reads `equipos` and `sistemas` on demand; it appends to `leads` (summary row) and `equipos_lead` (one row per equipment item) on `POST /save-lead`. See `docs/google-sheets-setup.md` for Service Account permissions setup.
 
+### Legacy root `index.html`
+
+The static `index.html` at the repo root is a **standalone pre-React landing page** — its content was ported into `frontend/src/components/screens/Screen0_Landing.jsx` (commit `5ae8aa3`). It is not part of the Netlify build (`netlify.toml` sets `base = "frontend"`), so it's effectively orphaned. When asked to edit the landing page, edit `Screen0_Landing.jsx` (+ its CSS file), not this file.
+
+### Deployment
+
+- **Backend → Railway**: `backend/railway.toml` (nixpacks build) + `backend/Procfile` both start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
+- **Frontend → Netlify**: `netlify.toml` at repo root builds from `frontend` (`base = "frontend"`, `npm run build`, publish `dist`) and hardcodes `VITE_API_URL` / `VITE_WHATSAPP_NUMBER` as build environment vars — these must be updated there (not just in `frontend/.env`) for production changes to take effect.
+
 ---
 
 ## Calculation Engine
