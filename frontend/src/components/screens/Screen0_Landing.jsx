@@ -17,10 +17,10 @@ const BAD_ITEMS = ['Gasolina cada apagón', 'Ruido que molesta', 'Arranque manua
 const GOOD_ITEMS = ['Sin combustible', 'Silencioso, cero ruido', 'Automático en segundos', 'Sin mantenimiento continuo', 'Cero emisiones', 'Baja tu recibo de CFE']
 
 const STEPS = [
-  { n: '1', title: 'Calcula tu respaldo en 2 minutos', desc: 'Usa nuestra calculadora para seleccionar tus equipos críticos y ver la capacidad de batería que necesitas. Sin formularios largos.' },
-  { n: '2', title: 'Evaluación gratuita en sitio', desc: 'Vamos a tu negocio, analizamos tu consumo y tus cargas críticas. Te decimos exactamente qué necesitas — y qué no necesitas.' },
-  { n: '3', title: 'Propuesta con números reales', desc: 'Te mostramos cuánto pierdes hoy vs. cuánto costaría el sistema y cuándo se paga solo. Sin sorpresas.' },
-  { n: '4', title: 'Instalación y listo', desc: 'Instalamos en días, no semanas. Monitoreo remoto activo desde el primer día. Soporte local permanente — a minutos de ti.' },
+  { n: '1', title: 'Escríbenos por WhatsApp', desc: 'Cuéntanos qué quieres respaldar: solo algunos equipos críticos o todo tu negocio.' },
+  { n: '2', title: 'Nos compartes la información', desc: '¿Todo tu negocio? Con tu recibo de CFE es suficiente. ¿Solo algunos equipos? Una lista de ellos nos basta.' },
+  { n: '3', title: 'Propuesta preliminar y visita', desc: 'Te enviamos una propuesta preliminar y agendamos una visita de levantamiento en tu sitio.' },
+  { n: '4', title: 'Cotización final e instalación', desc: 'En la visita confirmamos si hay costos adicionales, cerramos la cotización final, instalamos y listo: ya tienes tu sistema de respaldo.' },
 ]
 
 const STATS = [
@@ -77,7 +77,7 @@ export default function Screen0_Landing() {
           <div className="lp-loss-counter">{fmt(loss)}</div>
           <p className="lp-loss-sublabel">
             Basado en promedio de <span>restaurante en Puerto Escondido</span> —{' '}
-            <a href="#calc" className="lp-link">calcula el tuyo</a>
+            <a href="#calc" className="lp-link">pregúntanos el tuyo</a>
           </p>
         </div>
 
@@ -179,7 +179,7 @@ export default function Screen0_Landing() {
         <h2 className="lp-big-q">
           ¿Cuánto te cuesta<br />el próximo <span className="lp-accent">apagón?</span>
         </h2>
-        <p>Descúbrelo en 2 minutos. Selecciona tus equipos, obtén la capacidad que necesitas y recibe tu propuesta por WhatsApp.</p>
+        <p>Escríbenos por WhatsApp, cuéntanos qué quieres respaldar y te ayudamos a calcularlo sin compromiso.</p>
         <a
           href={WHATSAPP_URL}
           target="_blank"

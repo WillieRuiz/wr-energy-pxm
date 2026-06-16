@@ -9,6 +9,8 @@
   --lp-subtle:  #9CA3AF;
   --lp-danger:  #E03535;
   --lp-navy-tint: #EEF1F7;
+  --lp-whatsapp: #25D366;
+  --lp-whatsapp-d: #1DA851;
 
   background: var(--lp-bg);
   color: var(--lp-carbon);
@@ -323,8 +325,8 @@
   justify-content: center;
   width: 100%;
   padding: 1rem 1.5rem;
-  background: var(--lp-accent);
-  color: var(--lp-carbon);
+  background: var(--lp-whatsapp);
+  color: #FFFFFF;
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
   font-weight: 700;
@@ -332,11 +334,11 @@
   border-radius: 12px;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 0.15s, filter 0.15s;
+  transition: transform 0.15s, filter 0.15s, background 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
 
-.lp-btn-calc:active { transform: scale(0.97); filter: brightness(0.95); }
+.lp-btn-calc:active { transform: scale(0.97); background: var(--lp-whatsapp-d); }
 
 @keyframes lp-pulse {
   0%   { transform: scale(1); }
