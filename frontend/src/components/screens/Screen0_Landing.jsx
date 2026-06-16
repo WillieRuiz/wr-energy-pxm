@@ -1,8 +1,10 @@
 import { useState, useEffect } from 'react'
-import { useCalculator } from '../../hooks/useCalculator.js'
 import './Screen0_Landing.css'
 
 const LOSS_PER_SECOND = 900 / 3600
+const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
+const WHATSAPP_MESSAGE = 'Hola, me interesa instalar un sistema de respaldo, ¿me pueden dar más información?'
+const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
 const PAIN_CARDS = [
   { icon: '🥩', title: 'Merma de alimentos', desc: 'Refrigeradores y congeladores se calientan en <2 horas' },
@@ -29,7 +31,6 @@ const STATS = [
 ]
 
 export default function Screen0_Landing() {
-  const { goToScreen } = useCalculator()
   const [loss, setLoss] = useState(0)
   const [pulsed, setPulsed] = useState(false)
 
@@ -50,7 +51,11 @@ export default function Screen0_Landing() {
   }, [])
 
   const fmt = (n) => '$' + Math.floor(n).toLocaleString('es-MX')
-  const handleCTA = () => goToScreen(1)
+  const handleCTA = () => {
+    if (typeof window.gtag === 'function') {
+      window.gtag('event', 'click_whatsapp', { event_category: 'lead', event_label: 'landing_cta' })
+    }
+  }
 
   return (
     <div className="lp">
@@ -175,13 +180,16 @@ export default function Screen0_Landing() {
           ¿Cuánto te cuesta<br />el próximo <span className="lp-accent">apagón?</span>
         </h2>
         <p>Descúbrelo en 2 minutos. Selecciona tus equipos, obtén la capacidad que necesitas y recibe tu propuesta por WhatsApp.</p>
-        <button
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className="lp-btn-calc"
           style={{ maxWidth: '360px', margin: '0 auto 0.75rem' }}
           onClick={handleCTA}
         >
-          ⚡ Calcula tu sistema →
-        </button>
+          💬 Escríbenos por WhatsApp →
+        </a>
         <p style={{ fontSize: '11px', color: 'var(--lp-gray4)', margin: 0 }}>
           Gratis · Sin compromiso · Puerto Escondido y alrededores
         </p>
@@ -189,13 +197,16 @@ export default function Screen0_Landing() {
 
       {/* CTA FIXED */}
       <div className="lp-cta-fixed">
-        <button
+        <a
+          href={WHATSAPP_URL}
+          target="_blank"
+          rel="noopener noreferrer"
           className={`lp-btn-calc${pulsed ? ' lp-pulsed' : ''}`}
           onClick={handleCTA}
         >
-          ⚡ Calcula tu sistema →
-        </button>
-        <p className="lp-cta-sub">Gratis · Sin compromiso · Resultado en 2 minutos</p>
+          💬 Escríbenos por WhatsApp →
+        </a>
+        <p className="lp-cta-sub">Gratis · Sin compromiso · Respuesta inmediata</p>
       </div>
     </div>
   )
