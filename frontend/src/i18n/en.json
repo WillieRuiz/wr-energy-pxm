@@ -1,41 +1,43 @@
 {
   "screen1": {
-    "title": "What equipment do you need to back up?",
-    "subtitle": "Select your appliances and how many hours of backup you need.",
-    "add_row": "Add equipment",
-    "hours_label": "Hours of backup",
-    "calculate_button": "Calculate"
+    "title": "Select your appliances",
+    "subtitle": "Check what you want to back up and how many you have.",
+    "add_button": "Add appliances",
+    "none_selected": "No appliances selected",
+    "loading": "Loading appliances..."
   },
   "screen2": {
-    "col_equipment": "Equipment",
-    "col_qty": "Qty.",
-    "col_demand": "Demand (W)",
-    "select_equipment": "Select equipment",
-    "metric_demand": "Demand",
-    "metric_capacity": "Battery bank",
-    "headline": "Where should we send your result?",
-    "subtitle": "We'll contact you on WhatsApp with your personalized proposal.",
-    "name_label": "Name",
-    "whatsapp_label": "WhatsApp",
-    "email_label": "Email (optional)",
-    "cta_button": "See my result on WhatsApp",
-    "privacy": "We'll only use your info to contact you.",
-    "error_nombre": "Name must be at least 2 characters.",
-    "error_whatsapp": "Enter a valid phone number.",
-    "error_email": "Enter a valid email address."
-  },
-  "screen3": {
     "title": "Your recommended system",
-    "summary_title": "Selected equipment",
     "metric_demand": "Total demand",
     "metric_power": "System power",
     "metric_capacity": "Required capacity",
     "hours_label": "Hours of backup",
     "recommended": "Recommended",
-    "cta_button": "I'm interested",
+    "contado_label": "Cash price",
+    "anticipo_label": "Upfront (60%)",
+    "saldo_label": "Balance (40%)",
+    "msi_label": "12-month financing",
+    "continue_button": "Continue",
+    "custom_quote": "Your needs exceed our standard catalog. We will prepare a custom quote for you.",
     "victron_placeholder": "Custom quote — talk to us.",
-    "custom_quote_notice": "Your needs exceed our standard catalog. We'll reach out with a custom proposal.",
-    "loading": "Calculating...",
-    "disclaimer": "Prices shown are for reference only. The final cost may vary depending on the existing electrical installation conditions, infrastructure requirements, and other project-specific factors. An on-site technical assessment is required for an accurate quote."
+    "edit_title": "Not too late to adjust",
+    "edit_subtitle": "Add or remove appliances to recalculate.",
+    "disclaimer": "Estimated prices with tax included. Final cost varies by installation. Reference exchange rate.",
+    "loading": "Calculating..."
+  },
+  "screen3": {
+    "title": "Where should we send your proposal?",
+    "subtitle": "We'll send it to your WhatsApp in minutes.",
+    "name_label": "Name",
+    "whatsapp_label": "WhatsApp",
+    "email_label": "Email (optional)",
+    "submit_button": "Send",
+    "privacy": "We'll only use your info to contact you.",
+    "error_nombre": "Name must be at least 2 characters.",
+    "error_whatsapp": "Enter a valid phone number.",
+    "error_email": "Enter a valid email address.",
+    "success_title": "Done!",
+    "success_body": "We received your request. We're preparing your proposal and will be in touch soon.",
+    "whatsapp_button": "Open WhatsApp"
   }
 }

@@ -1,171 +1,142 @@
+import { useState } from 'react'
 import { useTranslation } from 'react-i18next'
 import ProgressBar from '../layout/ProgressBar.jsx'
-import SystemCard from '../ui/SystemCard.jsx'
+import Input from '../ui/Input.jsx'
 import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
-import { recommendSystems } from '../../utils/calculator.js'
 import { saveLead } from '../../services/api.js'
 import { buildWhatsAppUrl } from '../../utils/whatsapp.js'
 
-export default function Screen3_Results() {
+const PHONE_RE = /^\+?[\d\s\-(). ]{10,}$/
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+
+function validate(form, t) {
+  const errs = {}
+  if (!form.nombre || form.nombre.trim().length < 2) errs.nombre = t('screen3.error_nombre')
+  if (!form.whatsapp || !PHONE_RE.test(form.whatsapp)) errs.whatsapp = t('screen3.error_whatsapp')
+  if (form.email && !EMAIL_RE.test(form.email)) errs.email = t('screen3.error_email')
+  return errs
+}
+
+export default function Screen3_Contact() {
   const { t, i18n } = useTranslation()
-  const {
-    lead,
-    equipmentList,
-    hoursBackup,
-    setHoursBackup,
-    results,
-    setResults,
-    systemsCatalog,
-  } = useCalculator()
+  const { results, getSelectedRows, hoursBackup } = useCalculator()
 
-  const validRows = equipmentList.filter((r) => r.equipo && r.cantidad > 0)
+  const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '' })
+  const [touched, setTouched] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [submitted, setSubmitted] = useState(false)
 
-  const handleHoursChange = (val) => {
-    const hours = Math.max(1, Math.min(24, Number(val)))
-    setHoursBackup(hours)
-    setResults(recommendSystems(validRows, systemsCatalog, hours))
+  const errors = validate(form, t)
+  const isValid = Object.keys(errors).length === 0
+
+  const handleChange = (field, val) => setForm((prev) => ({ ...prev, [field]: val }))
+  const handleBlur = (field) => setTouched((prev) => ({ ...prev, [field]: true }))
+
+  const handleSubmit = async () => {
+    if (!isValid) return
+    setLoading(true)
+    const { requirements, recommendations } = results || {}
+    const { ecoflow, enphase } = recommendations || {}
+    const sistemaRecomendado = [ecoflow?.sistema, enphase?.sistema].filter(Boolean).join(' | ')
+    const costoTotal = (ecoflow?.usd_precio || 0) + (enphase?.usd_precio || 0)
+    try {
+      await saveLead({
+        nombre: form.nombre,
+        whatsapp: form.whatsapp,
+        ...(form.email && { email: form.email }),
+        sistema_recomendado: sistemaRecomendado,
+        costo_total: costoTotal,
+        demanda_total_w: requirements?.totalDemandW || 0,
+        potencia_necesaria_w: requirements?.systemPowerW || 0,
+        capacidad_necesaria_kwh: requirements?.batteryKwhRequired || 0,
+        horas_respaldo: hoursBackup,
+        equipos: getSelectedRows().map((r) => ({
+          equipo: r.equipo,
+          cantidad: r.cantidad,
+          potencia_w: r.potencia_w,
+          demanda_w: r.demanda_w,
+        })),
+      })
+    } catch {
+      // Lead save failure doesn't block the user
+    } finally {
+      setLoading(false)
+      setSubmitted(true)
+    }
   }
 
-  if (!results) {
+  if (submitted) {
     return (
-      <div className="p-8 text-center font-body text-gray-500">{t('screen3.loading')}</div>
+      <div className="max-w-md mx-auto px-4 py-12 flex flex-col items-center text-center gap-6">
+        <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
+          <span className="text-green-600 text-3xl">✓</span>
+        </div>
+        <div>
+          <h2 className="font-display font-bold text-azul-tormenta text-3xl mb-2">
+            {t('screen3.success_title')}
+          </h2>
+          <p className="font-body text-gray-500">{t('screen3.success_body')}</p>
+        </div>
+        <Button
+          onClick={() => window.open(buildWhatsAppUrl(results, i18n.language), '_blank')}
+          className="w-full text-base py-4"
+        >
+          {t('screen3.whatsapp_button')}
+        </Button>
+      </div>
     )
   }
 
-  const { requirements, recommendations } = results
-  const { ecoflow, enphase } = recommendations
-
-  const sistemaRecomendado = [ecoflow?.sistema, enphase?.sistema].filter(Boolean).join(' | ')
-  const costoTotal = (ecoflow?.usd_precio || 0) + (enphase?.usd_precio || 0)
-
-  const handleInterested = () => {
-    // Open WhatsApp first — must be synchronous in the click handler or browsers block it
-    window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
-
-    // Save lead in background without blocking the redirect
-    saveLead({
-      nombre: lead.nombre,
-      whatsapp: lead.whatsapp,
-      ...(lead.email && { email: lead.email }),
-      sistema_recomendado: sistemaRecomendado,
-      costo_total: costoTotal,
-      demanda_total_w: requirements.totalDemandW,
-      potencia_necesaria_w: requirements.systemPowerW,
-      capacidad_necesaria_kwh: requirements.batteryKwhRequired,
-      horas_respaldo: hoursBackup,
-      equipos: validRows.map((r) => ({
-        equipo: r.equipo,
-        cantidad: r.cantidad,
-        potencia_w: r.potencia_w,
-        demanda_w: r.cantidad * r.potencia_w,
-      })),
-    }).catch(() => {})
-  }
-
   return (
-    <div className="max-w-4xl mx-auto px-4 py-4">
+    <div className="max-w-md mx-auto px-4 py-8 pb-10 flex flex-col gap-6">
       <ProgressBar current={3} />
 
-      <h2 className="font-display font-bold text-azul-tormenta text-2xl mb-4">
-        {t('screen3.title')}
-      </h2>
-
-      <div className="lg:grid lg:grid-cols-2 lg:gap-6 space-y-6 lg:space-y-0">
-        {/* Left — Summary */}
-        <div className="space-y-4">
-          <div className="bg-white border border-hueso rounded-2xl shadow-sm p-6">
-            <h3 className="font-display font-bold text-azul-tormenta text-lg mb-3">
-              {t('screen3.summary_title')}
-            </h3>
-            <table className="w-full text-sm font-body">
-              <thead>
-                <tr className="text-gray-500 border-b border-hueso text-left">
-                  <th className="pb-2 font-medium">{t('screen2.col_equipment')}</th>
-                  <th className="pb-2 font-medium text-center">{t('screen2.col_qty')}</th>
-                  <th className="pb-2 font-medium text-right">{t('screen2.col_demand')}</th>
-                </tr>
-              </thead>
-              <tbody>
-                {validRows.map((row, i) => (
-                  <tr key={i} className="border-b border-hueso/50">
-                    <td className="py-1.5">{row.equipo}</td>
-                    <td className="py-1.5 text-center">{row.cantidad}</td>
-                    <td className="py-1.5 text-right font-mono">
-                      {(row.cantidad * row.potencia_w).toLocaleString('en-US')} W
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-
-          <div className="bg-azul-tormenta text-white rounded-2xl p-6 grid grid-cols-3 gap-4 text-center">
-            <div>
-              <div className="font-mono text-xl font-medium">
-                {Math.round(requirements.totalDemandW).toLocaleString('en-US')} W
-              </div>
-              <div className="text-xs text-white/60 font-body mt-1">
-                {t('screen3.metric_demand')}
-              </div>
-            </div>
-            <div className="border-x border-white/20">
-              <div className="font-mono text-xl font-medium">
-                {Math.round(requirements.systemPowerW).toLocaleString('en-US')} W
-              </div>
-              <div className="text-xs text-white/60 font-body mt-1">
-                {t('screen3.metric_power')}
-              </div>
-            </div>
-            <div>
-              <div className="font-mono text-xl font-medium">
-                {requirements.batteryKwhRequired.toFixed(1)} kWh
-              </div>
-              <div className="text-xs text-white/60 font-body mt-1">
-                {t('screen3.metric_capacity')}
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Right — Recommendations */}
-        <div className="space-y-4">
-          <div className="bg-white border border-hueso rounded-2xl shadow-sm p-4 flex items-center gap-4">
-            <label className="font-body text-sm font-medium text-carbon whitespace-nowrap">
-              {t('screen3.hours_label')}
-            </label>
-            <input
-              type="range"
-              min="2"
-              max="24"
-              step="1"
-              value={hoursBackup}
-              onChange={(e) => handleHoursChange(e.target.value)}
-              className="flex-1 accent-amarillo-solar"
-            />
-            <span className="font-mono text-carbon font-medium w-8 text-right">
-              {hoursBackup}h
-            </span>
-          </div>
-
-          <SystemCard system={ecoflow} brand="ecoflow" selected={!ecoflow?.needs_custom_quote} />
-          <SystemCard system={enphase} brand="enphase" selected={!enphase?.needs_custom_quote} />
-          <SystemCard brand="victron" />
-        </div>
+      <div>
+        <h2 className="font-display font-bold text-azul-tormenta text-3xl leading-tight mb-1">
+          {t('screen3.title')}
+        </h2>
+        <p className="font-body text-gray-500 text-sm">{t('screen3.subtitle')}</p>
       </div>
 
-      <div className="mt-8 text-center">
-        <Button variant="success" onClick={handleInterested} className="w-full sm:w-auto px-12 text-lg py-4">
-          {t('screen3.cta_button')}
-        </Button>
+      <div className="flex flex-col gap-4">
+        <Input
+          label={`${t('screen3.name_label')} *`}
+          value={form.nombre}
+          onChange={(e) => handleChange('nombre', e.target.value)}
+          onBlur={() => handleBlur('nombre')}
+          placeholder="Daniela Ramírez"
+          error={touched.nombre ? errors.nombre : undefined}
+        />
+        <Input
+          label={`${t('screen3.whatsapp_label')} *`}
+          type="tel"
+          value={form.whatsapp}
+          onChange={(e) => handleChange('whatsapp', e.target.value)}
+          onBlur={() => handleBlur('whatsapp')}
+          placeholder="+52 954 123 4567"
+          error={touched.whatsapp ? errors.whatsapp : undefined}
+        />
+        <Input
+          label={t('screen3.email_label')}
+          type="email"
+          value={form.email}
+          onChange={(e) => handleChange('email', e.target.value)}
+          onBlur={() => handleBlur('email')}
+          placeholder="tucorreo@ejemplo.com"
+          error={touched.email ? errors.email : undefined}
+        />
       </div>
 
-      <div className="mt-6 mx-auto max-w-2xl bg-blue-50 border border-blue-100 rounded-2xl p-5 flex gap-3">
-        <span className="text-blue-400 text-lg shrink-0 mt-0.5">ℹ</span>
-        <p className="font-body text-sm text-blue-700 leading-relaxed">
-          {t('screen3.disclaimer')}
-        </p>
-      </div>
+      <Button
+        onClick={handleSubmit}
+        disabled={!isValid || loading}
+        className="w-full text-base py-4"
+      >
+        {loading ? '...' : `${t('screen3.submit_button')} →`}
+      </Button>
+
+      <p className="text-center text-xs text-gray-400 font-body">{t('screen3.privacy')}</p>
     </div>
   )
 }

@@ -1,46 +1,35 @@
 import { useState, useEffect } from 'react'
 import './Screen0_Landing.css'
 
-const LOSS_PER_SECOND = 900 / 3600
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
-const WHATSAPP_MESSAGE = 'Hola, me interesa instalar un sistema de respaldo, ¿me pueden dar más información?'
+const WHATSAPP_MESSAGE = 'Hola, me interesa instalar un sistema de respaldo en mi casa, ¿me pueden dar más información?'
 const WHATSAPP_URL = `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(WHATSAPP_MESSAGE)}`
 
 const PAIN_CARDS = [
-  { icon: '🥩', title: 'Merma de alimentos', desc: 'Refrigeradores y congeladores se calientan en <2 horas' },
-  { icon: '🔒', title: 'Cierre forzado', desc: 'Sin luz no puedes operar ni cobrar con terminal' },
-  { icon: '💳', title: 'POS caído', desc: 'La mayoría de tus clientes paga con tarjeta' },
-  { icon: '🌧️', title: 'Temporada de lluvias', desc: 'Jun–Nov: apagones frecuentes y largos en toda la costa' },
+  { icon: '🌡️', title: 'Calor sin escape', desc: 'Sin ventilador ni AC en la costa, el calor se vuelve insoportable' },
+  { icon: '🍱', title: 'Comida echada a perder', desc: 'Tu refri y congelador se calientan en menos de 2 horas' },
+  { icon: '💧', title: 'Sin agua en la llave', desc: 'La bomba se apaga con la luz — sin presión en toda la casa' },
+  { icon: '🌐', title: 'Internet y home-office caídos', desc: 'Tu trabajo y los estudios de tus hijos dependen de la conexión' },
 ]
 
 const BAD_ITEMS = ['Gasolina cada apagón', 'Ruido que molesta', 'Arranque manual', 'Mantenimiento constante', 'Humo y emisiones', 'No baja tu recibo CFE']
 const GOOD_ITEMS = ['Sin combustible', 'Silencioso, cero ruido', 'Automático en segundos', 'Sin mantenimiento continuo', 'Cero emisiones', 'Baja tu recibo de CFE']
 
 const STEPS = [
-  { n: '1', title: 'Escríbenos por WhatsApp', desc: 'Cuéntanos qué quieres respaldar: solo algunos equipos críticos o todo tu negocio.' },
-  { n: '2', title: 'Nos compartes la información', desc: '¿Todo tu negocio? Con tu recibo de CFE es suficiente. ¿Solo algunos equipos? Una lista de ellos nos basta.' },
-  { n: '3', title: 'Propuesta preliminar y visita', desc: 'Te enviamos una propuesta preliminar y agendamos una visita de levantamiento en tu sitio.' },
-  { n: '4', title: 'Cotización final e instalación', desc: 'En la visita confirmamos si hay costos adicionales, cerramos la cotización final, instalamos y listo: ya tienes tu sistema de respaldo.' },
+  { n: '1', title: 'Calculas en 2 minutos', desc: 'Selecciona los equipos que quieres respaldar: refri, clima, bomba, internet. La calculadora hace el resto.' },
+  { n: '2', title: 'Recibís tu propuesta', desc: 'Te enviamos una propuesta preliminar con el sistema recomendado, precio y opciones de pago.' },
+  { n: '3', title: 'Instalamos en la costa', desc: 'Nuestro equipo instala en Puerto Escondido, Mazunte, Zipolite, Puerto Ángel y Huatulco.' },
 ]
 
 const STATS = [
-  { num: '84', label: 'Interés de búsqueda en Oaxaca por respaldo eléctrico' },
-  { num: '6 m', label: 'Temporada de lluvias con apagones frecuentes' },
-  { num: 'DAC', label: 'Tarifa castigada de CFE que aplica a negocios con alta carga' },
-  { num: '0', label: 'Costo de combustible con sistema de baterías instalado' },
+  { num: '5', label: 'Destinos en la costa de Oaxaca donde instalamos' },
+  { num: '6 m', label: 'Temporada de lluvias con apagones frecuentes (jun–nov)' },
+  { num: '2 min', label: 'Lo que tarda la calculadora en darte una propuesta' },
+  { num: '0', label: 'Litros de gasolina que necesita el sistema instalado' },
 ]
 
-export default function Screen0_Landing() {
-  const [loss, setLoss] = useState(0)
+export default function Screen0_Landing({ onStart }) {
   const [pulsed, setPulsed] = useState(false)
-
-  useEffect(() => {
-    const start = Date.now()
-    const interval = setInterval(() => {
-      setLoss(((Date.now() - start) / 1000) * LOSS_PER_SECOND)
-    }, 100)
-    return () => clearInterval(interval)
-  }, [])
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -50,8 +39,7 @@ export default function Screen0_Landing() {
     return () => clearTimeout(t)
   }, [])
 
-  const fmt = (n) => '$' + Math.floor(n).toLocaleString('es-MX')
-  const handleCTA = () => {
+  const handleWA = () => {
     if (typeof window.gtag === 'function') {
       window.gtag('event', 'click_whatsapp', { event_category: 'lead', event_label: 'landing_cta' })
     }
@@ -67,30 +55,28 @@ export default function Screen0_Landing() {
 
       {/* HERO */}
       <section className="lp-hero">
-        <p className="lp-eyebrow">Respaldo de energía para negocios</p>
+        <p className="lp-eyebrow">Respaldo de energía · Costa de Oaxaca</p>
         <h1 className="lp-headline">
-          Cada apagón<br />te cuesta<br /><span className="lp-accent">dinero real.</span>
+          Cuando se va<br />la luz, tu casa<br /><span className="lp-accent">sigue encendida.</span>
         </h1>
-
-        <div className="lp-loss-block">
-          <p className="lp-loss-label">Lo que llevas perdido hoy</p>
-          <div className="lp-loss-counter">{fmt(loss)}</div>
-          <p className="lp-loss-sublabel">
-            Basado en promedio de <span>restaurante en Puerto Escondido</span> —{' '}
-            <a href="#calc" className="lp-link">pregúntanos el tuyo</a>
-          </p>
-        </div>
-
         <p className="lp-body">
-          Somos el único especialista en sistemas de respaldo con baterías y energía solar radicado en Puerto Escondido. Sin gasolina, sin ruido, sin mantenimiento — y tu negocio sigue operando aunque toda la calle esté a oscuras.
+          En la costa la luz se va y no avisa. Tu refri, tu clima, tu bomba y tu internet se apagan contigo. Un sistema de baterías entra solo en milisegundos — ni te enteras del apagón.
         </p>
+        <button
+          onClick={onStart}
+          className="lp-btn-primary"
+          style={{ maxWidth: '360px', marginTop: '2rem' }}
+        >
+          ⚡ Calcula tu respaldo en 2 minutos
+        </button>
+        <p className="lp-hero-trust">Sin ruido · Sin humo · Sin gasolina · Sin mantenimiento</p>
       </section>
 
       {/* PAIN */}
       <section className="lp-section">
         <p className="lp-section-label">El problema</p>
-        <h2 className="lp-section-title">Un apagón no es solo incómodo</h2>
-        <p className="lp-section-sub">En Puerto Escondido, los apagones duran horas. Y cada hora tiene un costo real.</p>
+        <h2 className="lp-section-title">Un apagón afecta<br />toda tu casa</h2>
+        <p className="lp-section-sub">En la costa de Oaxaca, los apagones duran horas. Y cada hora tiene un costo.</p>
 
         <div className="lp-pain-grid">
           {PAIN_CARDS.map((c) => (
@@ -131,7 +117,7 @@ export default function Screen0_Landing() {
       {/* HOW IT WORKS */}
       <section className="lp-section">
         <p className="lp-section-label">Cómo funciona</p>
-        <h2 className="lp-section-title">Simple y rápido</h2>
+        <h2 className="lp-section-title">Tres pasos y listo</h2>
 
         <div className="lp-steps">
           {STEPS.map((s) => (
@@ -148,8 +134,8 @@ export default function Screen0_Landing() {
 
       {/* STATS */}
       <section className="lp-section">
-        <p className="lp-section-label">Por qué Puerto Escondido</p>
-        <h2 className="lp-section-title">Los números de la costa</h2>
+        <p className="lp-section-label">Por qué la costa de Oaxaca</p>
+        <h2 className="lp-section-title">Los números</h2>
 
         <div className="lp-stats-grid">
           {STATS.map((s) => (
@@ -164,48 +150,65 @@ export default function Screen0_Landing() {
       {/* PROOF */}
       <section className="lp-section">
         <p className="lp-section-label">Lo que dicen</p>
-        <h2 className="lp-section-title">Negocios que ya no se apagan</h2>
+        <h2 className="lp-section-title">Ya no se apagan</h2>
 
         <div className="lp-proof-box">
           <p className="lp-proof-text">
-            "Antes cada que se iba la luz yo sentía que perdía dinero y no podía hacer nada. Ahora el sistema prende solo y mis clientes ni se enteran. Ya no gasto en gasolina para la planta."
+            "Antes cuando se iba la luz lo primero que hacía era sacar la hielera para que no se echara a perder la comida. Ahora el sistema prende solo y ni me entero del apagón."
           </p>
-          <p className="lp-proof-attr"><span>Dueño de restaurante</span> · Puerto Escondido, Oaxaca</p>
+          <p className="lp-proof-attr"><span>Residente</span> · Puerto Escondido, Oaxaca</p>
         </div>
       </section>
 
       {/* FOOTER CTA */}
       <section className="lp-footer-cta" id="calc">
         <h2 className="lp-big-q">
-          ¿Cuánto te cuesta<br />el próximo <span className="lp-accent">apagón?</span>
+          ¿Qué quieres respaldar<br />en tu <span className="lp-accent">casa?</span>
         </h2>
-        <p>Escríbenos por WhatsApp, cuéntanos qué quieres respaldar y te ayudamos a calcularlo sin compromiso.</p>
+        <p>Usa la calculadora y en 2 minutos sabes qué sistema necesitas y cuánto cuesta.</p>
+        <button
+          onClick={onStart}
+          className="lp-btn-primary"
+          style={{ maxWidth: '360px', margin: '0 auto 0.75rem' }}
+        >
+          ⚡ Calcula tu respaldo en 2 minutos
+        </button>
         <a
           href={WHATSAPP_URL}
           target="_blank"
           rel="noopener noreferrer"
-          className="lp-btn-calc"
+          className="lp-btn-secondary"
           style={{ maxWidth: '360px', margin: '0 auto 0.75rem' }}
-          onClick={handleCTA}
+          onClick={handleWA}
         >
-          💬 Escríbenos por WhatsApp →
+          💬 Prefiero hablar por WhatsApp
         </a>
-        <p style={{ fontSize: '11px', color: 'var(--lp-gray4)', margin: 0 }}>
+        <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
           Gratis · Sin compromiso · Puerto Escondido y alrededores
         </p>
       </section>
 
       {/* CTA FIXED */}
       <div className="lp-cta-fixed">
-        <a
-          href={WHATSAPP_URL}
-          target="_blank"
-          rel="noopener noreferrer"
-          className={`lp-btn-calc${pulsed ? ' lp-pulsed' : ''}`}
-          onClick={handleCTA}
-        >
-          💬 Escríbenos por WhatsApp →
-        </a>
+        <div style={{ display: 'flex', gap: '0.625rem', maxWidth: '480px', margin: '0 auto' }}>
+          <button
+            onClick={onStart}
+            className={`lp-btn-primary${pulsed ? ' lp-pulsed' : ''}`}
+            style={{ flex: 1 }}
+          >
+            ⚡ Calcular
+          </button>
+          <a
+            href={WHATSAPP_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="lp-btn-wa"
+            onClick={handleWA}
+            style={{ flex: 1 }}
+          >
+            💬 WhatsApp
+          </a>
+        </div>
         <p className="lp-cta-sub">Gratis · Sin compromiso · Respuesta inmediata</p>
       </div>
     </div>

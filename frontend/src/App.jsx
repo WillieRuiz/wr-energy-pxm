@@ -3,22 +3,22 @@ import { useCalculator } from './hooks/useCalculator.js'
 import Header from './components/layout/Header.jsx'
 import Footer from './components/layout/Footer.jsx'
 import Screen0_Landing from './components/screens/Screen0_Landing.jsx'
-import Screen1_LeadCapture from './components/screens/Screen1_LeadCapture.jsx'
-import Screen2_Equipment from './components/screens/Screen2_Equipment.jsx'
-import Screen3_Results from './components/screens/Screen3_Results.jsx'
+import Screen1_Equipment from './components/screens/Screen1_LeadCapture.jsx'
+import Screen2_Recommendation from './components/screens/Screen2_Equipment.jsx'
+import Screen3_Contact from './components/screens/Screen3_Results.jsx'
 
 function AppContent() {
-  const { currentScreen } = useCalculator()
+  const { currentScreen, goToScreen } = useCalculator()
 
-  if (currentScreen === 0) return <Screen0_Landing />
+  if (currentScreen === 0) return <Screen0_Landing onStart={() => goToScreen(1)} />
 
   return (
-    <div className="min-h-screen bg-hueso flex flex-col">
+    <div className="min-h-screen bg-white flex flex-col">
       <Header />
       <main className="flex-1">
-        {currentScreen === 1 && <Screen1_LeadCapture />}
-        {currentScreen === 2 && <Screen2_Equipment />}
-        {currentScreen === 3 && <Screen3_Results />}
+        {currentScreen === 1 && <Screen1_Equipment />}
+        {currentScreen === 2 && <Screen2_Recommendation />}
+        {currentScreen === 3 && <Screen3_Contact />}
       </main>
       <Footer />
     </div>

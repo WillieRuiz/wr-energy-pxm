@@ -1,16 +1,14 @@
 .lp {
-  --lp-bg:      #F2F2F2;  /* hueso */
-  --lp-card:    #FFFFFF;
-  --lp-primary: #1B2A4A;  /* azul-tormenta */
-  --lp-accent:  #F4C430;  /* amarillo-solar */
-  --lp-carbon:  #1A1A1A;  /* carbon */
-  --lp-border:  #DDDBD6;
-  --lp-muted:   #6B7280;
-  --lp-subtle:  #9CA3AF;
-  --lp-danger:  #E03535;
+  --lp-bg:       #ffffff;
+  --lp-card:     #ffffff;
+  --lp-primary:  #1f2f58;   /* azul-wr */
+  --lp-accent:   #f47c02;   /* naranja-wr */
+  --lp-carbon:   #1A1A1A;
+  --lp-border:   #E5E7EB;
+  --lp-muted:    #6B7280;
+  --lp-subtle:   #9CA3AF;
+  --lp-danger:   #E03535;
   --lp-navy-tint: #EEF1F7;
-  --lp-whatsapp: #25D366;
-  --lp-whatsapp-d: #1DA851;
 
   background: var(--lp-bg);
   color: var(--lp-carbon);
@@ -29,7 +27,7 @@
   align-items: center;
   justify-content: space-between;
   z-index: 99;
-  background: linear-gradient(to bottom, rgba(242,242,242,0.97) 60%, transparent);
+  background: linear-gradient(to bottom, rgba(255,255,255,0.97) 60%, transparent);
 }
 
 .lp-nav-logo {
@@ -54,7 +52,7 @@
   display: flex;
   flex-direction: column;
   justify-content: center;
-  padding: 3rem 1.5rem 7rem;
+  padding: 5rem 1.5rem 7rem;
   position: relative;
   overflow: hidden;
 }
@@ -63,7 +61,7 @@
   content: '';
   position: absolute;
   inset: 0;
-  background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(244,196,48,0.12) 0%, transparent 70%);
+  background: radial-gradient(ellipse 80% 60% at 50% 100%, rgba(244,124,2,0.10) 0%, transparent 70%);
   pointer-events: none;
 }
 
@@ -72,67 +70,33 @@
   font-weight: 600;
   letter-spacing: 0.14em;
   text-transform: uppercase;
-  color: var(--lp-primary);
+  color: var(--lp-accent);
   margin-bottom: 1.25rem;
 }
 
 .lp-headline {
   font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(3.2rem, 14vw, 6.5rem);
+  font-size: clamp(2.8rem, 12vw, 5.5rem);
   line-height: 0.95;
   letter-spacing: 0.01em;
   color: var(--lp-primary);
-  margin-bottom: 0.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .lp-accent { color: var(--lp-accent); }
 
-.lp-loss-block {
-  background: var(--lp-card);
-  border: 1px solid var(--lp-border);
-  border-left: 3px solid var(--lp-accent);
-  border-radius: 10px;
-  padding: 1.25rem 1.5rem;
-  margin: 2rem 0;
-}
-
-.lp-loss-label {
-  font-size: 11px;
-  font-weight: 600;
-  letter-spacing: 0.1em;
-  text-transform: uppercase;
-  color: var(--lp-muted);
-  margin-bottom: 0.5rem;
-}
-
-.lp-loss-counter {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: clamp(2.8rem, 11vw, 5rem);
-  color: var(--lp-primary);
-  line-height: 1;
-  letter-spacing: 0.02em;
-}
-
-.lp-loss-sublabel {
-  font-size: 12px;
-  color: var(--lp-muted);
-  margin-top: 0.4rem;
-}
-
-.lp-loss-sublabel span { color: var(--lp-carbon); font-weight: 500; }
-
-.lp-link {
-  color: var(--lp-primary);
-  text-decoration: none;
-  font-weight: 600;
-}
-
-.lp-body {
+.lp-hero-sub {
   font-size: 1rem;
   color: var(--lp-muted);
-  max-width: 420px;
+  max-width: 400px;
   line-height: 1.65;
   margin-bottom: 2rem;
+}
+
+.lp-hero-trust {
+  font-size: 12px;
+  color: var(--lp-subtle);
+  margin-top: 0.75rem;
 }
 
 /* ── SECTIONS ── */
@@ -146,7 +110,7 @@
   font-weight: 600;
   letter-spacing: 0.12em;
   text-transform: uppercase;
-  color: var(--lp-primary);
+  color: var(--lp-accent);
   margin-bottom: 1rem;
 }
 
@@ -154,7 +118,7 @@
   font-family: 'Bebas Neue', sans-serif;
   font-size: clamp(2rem, 8vw, 3.5rem);
   line-height: 1;
-  margin-bottom: 1.5rem;
+  margin-bottom: 1rem;
   color: var(--lp-primary);
 }
 
@@ -162,6 +126,7 @@
   color: var(--lp-muted);
   font-size: 14px;
   max-width: 380px;
+  margin-bottom: 0;
 }
 
 /* ── PAIN CARDS ── */
@@ -255,6 +220,7 @@
   border-radius: 10px;
   padding: 1.5rem;
   margin-top: 1.5rem;
+  margin-bottom: 1.25rem;
 }
 
 .lp-proof-text {
@@ -268,30 +234,18 @@
 .lp-proof-attr { font-size: 12px; color: var(--lp-muted); font-weight: 500; }
 .lp-proof-attr span { color: var(--lp-primary); font-weight: 600; }
 
-/* ── STATS ── */
-.lp-stats-grid {
-  display: grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 10px;
-  margin-top: 1.5rem;
+/* ── WHY LIST ── */
+.lp-why-list { display: flex; flex-direction: column; gap: 0.625rem; }
+
+.lp-why-item {
+  font-size: 14px;
+  color: var(--lp-carbon);
+  display: flex;
+  gap: 0.5rem;
+  align-items: baseline;
 }
 
-.lp-stat-card {
-  background: var(--lp-card);
-  border: 1px solid var(--lp-border);
-  border-radius: 10px;
-  padding: 1.25rem 1rem;
-  text-align: center;
-}
-
-.lp-stat-num {
-  font-family: 'Bebas Neue', sans-serif;
-  font-size: 2.5rem;
-  color: var(--lp-primary);
-  line-height: 1;
-}
-
-.lp-stat-label { font-size: 12px; color: var(--lp-muted); margin-top: 0.35rem; line-height: 1.4; }
+.lp-why-item::before { color: var(--lp-accent); }
 
 /* ── FOOTER CTA ── */
 .lp-footer-cta {
@@ -318,14 +272,20 @@
   margin-right: auto;
 }
 
-/* ── BUTTON ── */
-.lp-btn-calc {
+.lp-cta-micro {
+  font-size: 11px;
+  color: rgba(255,255,255,0.5);
+  margin-top: 0.75rem;
+}
+
+/* ── BUTTONS ── */
+.lp-btn-primary {
   display: flex;
   align-items: center;
   justify-content: center;
   width: 100%;
   padding: 1rem 1.5rem;
-  background: var(--lp-whatsapp);
+  background: var(--lp-accent);
   color: #FFFFFF;
   font-family: 'Inter', sans-serif;
   font-size: 1rem;
@@ -334,11 +294,11 @@
   border-radius: 12px;
   cursor: pointer;
   text-decoration: none;
-  transition: transform 0.15s, filter 0.15s, background 0.15s;
+  transition: transform 0.15s, filter 0.15s;
   -webkit-tap-highlight-color: transparent;
 }
 
-.lp-btn-calc:active { transform: scale(0.97); background: var(--lp-whatsapp-d); }
+.lp-btn-primary:active { transform: scale(0.97); filter: brightness(0.9); }
 
 @keyframes lp-pulse {
   0%   { transform: scale(1); }
@@ -346,15 +306,20 @@
   100% { transform: scale(1); }
 }
 
-.lp-btn-calc.lp-pulsed { animation: lp-pulse 0.35s ease; }
+.lp-btn-primary.lp-pulsed { animation: lp-pulse 0.35s ease; }
 
 /* ── CTA FIXED ── */
 .lp-cta-fixed {
   position: fixed;
   bottom: 0; left: 0; right: 0;
   padding: 1rem 1.5rem 1.25rem;
-  background: linear-gradient(to top, var(--lp-bg) 70%, transparent);
+  background: linear-gradient(to top, rgba(255,255,255,0.97) 70%, transparent);
   z-index: 100;
+}
+
+.lp-cta-fixed .lp-btn-primary {
+  max-width: 480px;
+  margin: 0 auto;
 }
 
 .lp-cta-sub {
@@ -364,14 +329,93 @@
   margin-top: 0.5rem;
 }
 
+/* ── BODY TEXT ── */
+.lp-body {
+  font-size: 1rem;
+  color: var(--lp-muted);
+  max-width: 420px;
+  line-height: 1.65;
+}
+
+/* ── STATS ── */
+.lp-stats-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
+.lp-stat-card {
+  background: var(--lp-navy-tint);
+  border-radius: 12px;
+  padding: 1.25rem 1rem;
+  text-align: center;
+}
+
+.lp-stat-num {
+  font-family: 'Bebas Neue', sans-serif;
+  font-size: 2.5rem;
+  color: var(--lp-primary);
+  line-height: 1;
+  margin-bottom: 0.5rem;
+}
+
+.lp-stat-label {
+  font-size: 12px;
+  color: var(--lp-muted);
+  line-height: 1.4;
+}
+
+/* ── SECONDARY BUTTON (sobre fondo oscuro) ── */
+.lp-btn-secondary {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 100%;
+  padding: 1rem 1.5rem;
+  background: transparent;
+  color: rgba(255,255,255,0.80);
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 600;
+  border: 1px solid rgba(255,255,255,0.30);
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: border-color 0.15s, color 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lp-btn-secondary:active { filter: brightness(0.9); }
+
+/* ── WHATSAPP BUTTON (barra fija) ── */
+.lp-btn-wa {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem 1.5rem;
+  background: var(--lp-primary);
+  color: #ffffff;
+  font-family: 'Inter', sans-serif;
+  font-size: 1rem;
+  font-weight: 700;
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  text-decoration: none;
+  transition: filter 0.15s;
+  -webkit-tap-highlight-color: transparent;
+}
+
+.lp-btn-wa:active { filter: brightness(0.9); }
+
 /* ── RESPONSIVE ── */
 @media (prefers-reduced-motion: reduce) {
-  .lp-btn-calc.lp-pulsed { animation: none; }
+  .lp-btn-primary.lp-pulsed { animation: none; }
 }
 
 @media (min-width: 600px) {
   .lp-hero    { padding: 5rem 2.5rem 7rem; }
   .lp-section { padding: 5rem 2.5rem; }
   .lp-pain-grid  { grid-template-columns: repeat(4, 1fr); }
-  .lp-stats-grid { grid-template-columns: repeat(4, 1fr); }
 }

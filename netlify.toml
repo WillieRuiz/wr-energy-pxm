@@ -5,4 +5,5 @@
 
 [build.environment]
   VITE_API_URL         = "https://wr-energy-pxm-production-08ec.up.railway.app"
+  VITE_DEFAULT_LANG    = "es"
   VITE_WHATSAPP_NUMBER = "525575155669"

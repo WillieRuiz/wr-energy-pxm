@@ -102,6 +102,134 @@ def read_systems_sheet() -> list[dict]:
     return systems
 
 
+def _pf(val) -> float:
+    """Parse float from a sheet cell value (strips $, commas, whitespace)."""
+    if not val:
+        return 0.0
+    try:
+        return float(str(val).replace("$", "").replace(",", "").strip())
+    except ValueError:
+        return 0.0
+
+
+def read_systems_from_catalog() -> list[dict]:
+    """
+    Builds complete system configurations from:
+      - 'catalogo'        → prices (costo_usd, precio_final_usd_ref) indexed by codigo
+      - 'specs_estaciones' → station power/capacity + compatible battery info
+
+    For each station generates one entry per valid battery count
+    (min_baterias..max_baterias). Returns list sorted by (marca, almacenamiento).
+    """
+    catalogo_rows = read_sheet("catalogo")
+    estaciones_rows = read_sheet("specs_estaciones")
+
+    # Index catalog by codigo → {codigo: row_dict}
+    catalogo = {r["codigo"]: r for r in catalogo_rows if r.get("codigo")}
+
+    sistemas = []
+
+    for est in estaciones_rows:
+        e_codigo = est.get("codigo", "")
+        if not e_codigo:
+            continue
+
+        e_cat = catalogo.get(e_codigo, {})
+        e_precio = _pf(e_cat.get("precio_final_usd_ref") or e_cat.get("costo_usd"))
+        if not e_precio:
+            continue
+
+        e_nombre = est.get("nombre", e_codigo)
+        e_potencia_kw = _pf(est.get("salida_continua_w")) / 1000
+        e_kwh_base = _pf(est.get("cap_base_kwh"))
+        marca = e_cat.get("marca", "Ecoflow")
+
+        b_codigo = est.get("codigo_bateria", "")
+        b_kwh = _pf(est.get("cap_bateria_kwh"))
+        min_bats = int(_pf(est.get("min_baterias")) or 0)
+        max_bats = int(_pf(est.get("max_baterias")) or 0)
+
+        b_precio = 0.0
+        b_nombre = ""
+        if b_codigo and b_codigo in catalogo:
+            b_cat = catalogo[b_codigo]
+            b_precio = _pf(b_cat.get("precio_final_usd_ref") or b_cat.get("costo_usd"))
+            b_nombre = b_cat.get("nombre", b_codigo)
+
+        bat_range = range(min_bats, max_bats + 1) if (b_kwh > 0 and b_codigo) else [0]
+
+        for n_bats in bat_range:
+            total_kwh = e_kwh_base + n_bats * b_kwh
+            total_usd = e_precio + n_bats * b_precio
+
+            if total_kwh <= 0 or total_usd <= 0:
+                continue
+
+            if n_bats == 0:
+                nombre = e_nombre
+            elif n_bats == 1:
+                nombre = f"{e_nombre} + {b_nombre}" if b_nombre else e_nombre
+            else:
+                nombre = f"{e_nombre} + {n_bats}× {b_nombre}" if b_nombre else e_nombre
+
+            sistemas.append({
+                "sistema":        nombre,
+                "marca":          marca,
+                "almacenamiento": round(total_kwh, 2),
+                "potencia":       round(e_potencia_kw, 2),
+                "phases":         1,
+                "usd_precio":     round(total_usd, 2),
+                "mxn_precio":     0.0,
+                "usd_wh":         round(total_usd / (total_kwh * 1000), 4) if total_kwh else 0.0,
+            })
+
+    return sorted(sistemas, key=lambda s: (s["marca"], s["almacenamiento"]))
+
+
+def read_station_specs() -> list[dict]:
+    """
+    Returns specs_estaciones enriched with prices from catalogo.
+    Each entry contains all fields needed by the recommendation engine (§3.2).
+    """
+    catalogo_rows = read_sheet("catalogo")
+    estaciones_rows = read_sheet("specs_estaciones")
+
+    catalogo = {r["codigo"]: r for r in catalogo_rows if r.get("codigo")}
+
+    result = []
+    for est in estaciones_rows:
+        codigo = est.get("codigo", "")
+        if not codigo:
+            continue
+
+        cat = catalogo.get(codigo, {})
+        precio_est = _pf(cat.get("precio_final_usd_ref") or cat.get("costo_usd"))
+        if not precio_est:
+            continue
+
+        b_codigo = est.get("codigo_bateria", "")
+        b_cat = catalogo.get(b_codigo, {}) if b_codigo else {}
+        precio_bat = _pf(b_cat.get("precio_final_usd_ref") or b_cat.get("costo_usd"))
+
+        result.append({
+            "codigo": codigo,
+            "nombre": est.get("nombre", codigo),
+            "marca": cat.get("marca", "Ecoflow"),
+            "salida_continua_w": _pf(est.get("salida_continua_w")),
+            "cap_base_kwh": _pf(est.get("cap_base_kwh")),
+            "cap_bateria_kwh": _pf(est.get("cap_bateria_kwh")),
+            "min_baterias": int(_pf(est.get("min_baterias")) or 0),
+            "max_baterias": int(_pf(est.get("max_baterias")) or 0),
+            "codigo_bateria": b_codigo,
+            "nombre_bateria": b_cat.get("nombre", b_codigo),
+            "precio_estacion_usd": precio_est,
+            "precio_bateria_usd": precio_bat,
+            "acepta_smart_panel": est.get("acepta_smart_panel", "NO").strip().upper() in ("SÍ", "SI", "YES"),
+        })
+
+    return result
+
+
 def append_row(sheet_name: str, row: list) -> int:
     service = _get_service()
     result = (

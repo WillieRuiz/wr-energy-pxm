@@ -3,10 +3,15 @@ export default {
   theme: {
     extend: {
       colors: {
-        'azul-tormenta': '#1B2A4A',
-        'amarillo-solar': '#F4C430',
-        'carbon': '#1A1A1A',
-        'hueso': '#F2F2F2',
+        // Colores de marca
+        'azul-wr':    '#1f2f58',
+        'naranja-wr': '#f47c02',
+        'blanco':     '#ffffff',
+        // Aliases de compatibilidad para las pantallas de la calculadora (no renombrar)
+        'azul-tormenta':  '#1f2f58',
+        'amarillo-solar': '#f47c02',
+        'carbon':         '#1A1A1A',
+        'hueso':          '#ffffff',
       },
       fontFamily: {
         display: ['"Barlow Condensed"', 'sans-serif'],

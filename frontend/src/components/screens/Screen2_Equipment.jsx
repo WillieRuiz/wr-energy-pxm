@@ -1,129 +1,237 @@
-import { useState } from 'react'
+import { useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import ProgressBar from '../layout/ProgressBar.jsx'
-import Input from '../ui/Input.jsx'
 import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
-import { saveLead } from '../../services/api.js'
-import { buildWhatsAppUrl } from '../../utils/whatsapp.js'
+import { recommend } from '../../services/api.js'
+import { calcPricing } from '../../utils/pricing.js'
 
-const PHONE_RE = /^\+?[\d\s\-(). ]{10,}$/
-const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
-
-function validate(form, t) {
-  const errs = {}
-  if (!form.nombre || form.nombre.trim().length < 2) errs.nombre = t('screen2.error_nombre')
-  if (!form.whatsapp || !PHONE_RE.test(form.whatsapp)) errs.whatsapp = t('screen2.error_whatsapp')
-  if (form.email && !EMAIL_RE.test(form.email)) errs.email = t('screen2.error_email')
-  return errs
+function fmt(n) {
+  return Math.round(n).toLocaleString('es-MX')
 }
 
-export default function Screen2_LeadCapture() {
-  const { t, i18n } = useTranslation()
-  const { equipmentList, hoursBackup, results, setLead } = useCalculator()
+function PricingBlock({ system, totalDemandW, t }) {
+  if (!system) return null
+  if (system.needs_custom_quote) {
+    return (
+      <p className="font-body text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
+        {t('screen2.custom_quote')}
+      </p>
+    )
+  }
+  const { contado, anticipo, saldo, mensualidad } = calcPricing(system.usd_precio, totalDemandW)
+  return (
+    <div className="space-y-3">
+      <div className="flex items-baseline justify-between">
+        <span className="font-body text-sm text-gray-500">{t('screen2.contado_label')}</span>
+        <span className="font-mono font-medium text-lg text-carbon">${fmt(contado)} MXN</span>
+      </div>
+      <div className="pl-3 border-l-2 border-gray-100 space-y-1 text-sm font-body text-gray-500">
+        <div className="flex justify-between">
+          <span>{t('screen2.anticipo_label')}</span>
+          <span className="font-mono">${fmt(anticipo)}</span>
+        </div>
+        <div className="flex justify-between">
+          <span>{t('screen2.saldo_label')}</span>
+          <span className="font-mono">${fmt(saldo)}</span>
+        </div>
+      </div>
+      <div className="flex items-baseline justify-between pt-1 border-t border-gray-100">
+        <span className="font-body text-sm text-gray-500">{t('screen2.msi_label')}</span>
+        <span className="font-mono font-medium text-carbon">
+          ${fmt(mensualidad)}<span className="text-xs text-gray-400">/mes</span>
+        </span>
+      </div>
+    </div>
+  )
+}
 
-  const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '' })
-  const [touched, setTouched] = useState({})
+function SystemBlock({ system, brand, totalDemandW, t }) {
+  if (brand === 'victron') {
+    return (
+      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
+        <h3 className="font-display font-bold text-azul-tormenta text-lg mb-1">Victron + Pytes</h3>
+        <p className="font-body text-sm text-gray-400">{t('screen2.victron_placeholder')}</p>
+      </div>
+    )
+  }
+  if (!system) return null
+  return (
+    <div className={`bg-white rounded-2xl shadow-sm p-5 border-2 ${!system.needs_custom_quote ? 'border-amarillo-solar' : 'border-gray-100'}`}>
+      <div className="flex items-start justify-between mb-3">
+        <h3 className="font-display font-bold text-azul-tormenta text-lg leading-tight">
+          {system.sistema}
+        </h3>
+        {!system.needs_custom_quote && (
+          <span className="ml-2 shrink-0 bg-amarillo-solar text-carbon text-xs font-display font-bold px-2 py-0.5 rounded uppercase tracking-wide">
+            {t('screen2.recommended')}
+          </span>
+        )}
+      </div>
+      <div className="flex gap-3 text-xs font-mono text-gray-400 mb-4">
+        <span>{system.almacenamiento} kWh</span>
+        <span>{system.potencia} kW</span>
+        {system.acepta_smart_panel && (
+          <span className="text-azul-tormenta">+ Smart Panel disponible</span>
+        )}
+      </div>
+      <PricingBlock system={system} totalDemandW={totalDemandW} t={t} />
+    </div>
+  )
+}
 
-  const errors = validate(form, t)
-  const isValid = Object.keys(errors).length === 0
+export default function Screen2_Recommendation() {
+  const { t } = useTranslation()
+  const {
+    results,
+    setResults,
+    hoursBackup,
+    setHoursBackup,
+    equipmentCatalog,
+    selections,
+    toggleItem,
+    setItemQty,
+    getSelectedRows,
+    goToScreen,
+  } = useCalculator()
 
-  const handleChange = (field, value) => setForm((prev) => ({ ...prev, [field]: value }))
-  const handleBlur = (field) => setTouched((prev) => ({ ...prev, [field]: true }))
+  // Debounced recalculate — skips first render (results already set by Screen1)
+  const isFirst = useRef(true)
+  const timer = useRef(null)
 
-  const handleSubmit = () => {
-    setLead(form)
+  useEffect(() => {
+    if (isFirst.current) { isFirst.current = false; return }
+    clearTimeout(timer.current)
+    timer.current = setTimeout(async () => {
+      const rows = getSelectedRows()
+      if (rows.length === 0) return
+      try {
+        const data = await recommend({
+          equipos: rows,
+          horas_respaldo: hoursBackup,
+        })
+        setResults(data)
+      } catch {}
+    }, 350)
+    return () => clearTimeout(timer.current)
+  }, [selections, hoursBackup]) // eslint-disable-line react-hooks/exhaustive-deps
 
-    // Open WhatsApp synchronously to avoid popup blocker
-    window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
-
-    // Save lead in background without blocking the redirect
-    const validRows = equipmentList.filter((r) => r.equipo && r.cantidad > 0)
-    const { requirements, recommendations } = results || {}
-    const { ecoflow, enphase } = recommendations || {}
-    saveLead({
-      nombre: form.nombre,
-      whatsapp: form.whatsapp,
-      ...(form.email && { email: form.email }),
-      sistema_recomendado: [ecoflow?.sistema, enphase?.sistema].filter(Boolean).join(' | '),
-      costo_total: (ecoflow?.usd_precio || 0) + (enphase?.usd_precio || 0),
-      demanda_total_w: requirements?.totalDemandW || 0,
-      potencia_necesaria_w: requirements?.systemPowerW || 0,
-      capacidad_necesaria_kwh: requirements?.batteryKwhRequired || 0,
-      horas_respaldo: hoursBackup,
-      equipos: validRows.map((r) => ({
-        equipo: r.equipo,
-        cantidad: r.cantidad,
-        potencia_w: r.potencia_w,
-        demanda_w: r.cantidad * r.potencia_w,
-      })),
-    }).catch(() => {})
+  if (!results) {
+    return (
+      <div className="p-8 text-center font-body text-gray-400">{t('screen2.loading')}</div>
+    )
   }
 
-  const { requirements } = results || {}
+  const { requirements, recommendations } = results
+  const { ecoflow } = recommendations
 
   return (
-    <div className="max-w-md mx-auto px-4 py-4 pb-10 flex flex-col gap-6">
-      <ProgressBar current={2} total={2} />
+    <div className="max-w-2xl mx-auto px-4 py-4">
+      <ProgressBar current={2} />
 
-      {requirements && (
-        <div className="bg-azul-tormenta text-white rounded-2xl p-5 grid grid-cols-2 gap-4 text-center">
-          <div>
-            <div className="font-mono text-2xl font-medium">
-              {(requirements.totalDemandW / 1000).toFixed(1)} kW
-            </div>
-            <div className="text-xs text-white/60 font-body mt-1">{t('screen2.metric_demand')}</div>
+      <h2 className="font-display font-bold text-azul-tormenta text-2xl mb-1">
+        {t('screen2.title')}
+      </h2>
+
+      {/* Requirements summary */}
+      <div className="bg-azul-tormenta text-white rounded-2xl p-4 grid grid-cols-3 gap-2 text-center mb-4">
+        <div>
+          <div className="font-mono text-lg font-medium">
+            {Math.round(requirements.totalDemandW).toLocaleString('en-US')} W
           </div>
-          <div className="border-l border-white/20">
-            <div className="font-mono text-2xl font-medium">
-              {requirements.batteryKwhRequired.toFixed(1)} kWh
-            </div>
-            <div className="text-xs text-white/60 font-body mt-1">{t('screen2.metric_capacity')}</div>
-          </div>
+          <div className="text-xs text-white/60 font-body mt-0.5">{t('screen2.metric_demand')}</div>
         </div>
-      )}
-
-      <div className="text-center">
-        <h2 className="font-display font-bold text-azul-tormenta text-2xl leading-tight mb-1">
-          {t('screen2.headline')}
-        </h2>
-        <p className="font-body text-gray-500 text-sm">{t('screen2.subtitle')}</p>
+        <div className="border-x border-white/20">
+          <div className="font-mono text-lg font-medium">
+            {Math.round(requirements.systemPowerW).toLocaleString('en-US')} W
+          </div>
+          <div className="text-xs text-white/60 font-body mt-0.5">{t('screen2.metric_power')}</div>
+        </div>
+        <div>
+          <div className="font-mono text-lg font-medium">
+            {requirements.batteryKwhRequired.toFixed(1)} kWh
+          </div>
+          <div className="text-xs text-white/60 font-body mt-0.5">{t('screen2.metric_capacity')}</div>
+        </div>
       </div>
 
-      <div className="flex flex-col gap-4">
-        <Input
-          label={`${t('screen2.name_label')} *`}
-          value={form.nombre}
-          onChange={(e) => handleChange('nombre', e.target.value)}
-          onBlur={() => handleBlur('nombre')}
-          placeholder="Daniela Ramírez"
-          error={touched.nombre ? errors.nombre : undefined}
+      {/* Backup hours slider */}
+      <div className="bg-white border border-gray-100 rounded-2xl shadow-sm p-4 flex items-center gap-4 mb-4">
+        <label className="font-body text-sm font-medium text-carbon whitespace-nowrap">
+          {t('screen2.hours_label')}
+        </label>
+        <input
+          type="range" min="2" max="24" step="1"
+          value={hoursBackup}
+          onChange={(e) => setHoursBackup(Number(e.target.value))}
+          className="flex-1 accent-amarillo-solar"
         />
-        <Input
-          label={`${t('screen2.whatsapp_label')} *`}
-          type="tel"
-          value={form.whatsapp}
-          onChange={(e) => handleChange('whatsapp', e.target.value)}
-          onBlur={() => handleBlur('whatsapp')}
-          placeholder="+52 954 123 4567"
-          error={touched.whatsapp ? errors.whatsapp : undefined}
-        />
-        <Input
-          label={t('screen2.email_label')}
-          type="email"
-          value={form.email}
-          onChange={(e) => handleChange('email', e.target.value)}
-          onBlur={() => handleBlur('email')}
-          placeholder="tucorreo@ejemplo.com"
-          error={touched.email ? errors.email : undefined}
-        />
+        <span className="font-mono text-carbon font-medium w-8 text-right">{hoursBackup}h</span>
       </div>
 
-      <Button variant="success" onClick={handleSubmit} disabled={!isValid} className="w-full text-base py-4">
-        {t('screen2.cta_button')}
-      </Button>
+      {/* System recommendation */}
+      <div className="space-y-3 mb-4">
+        <SystemBlock system={ecoflow} brand="ecoflow" totalDemandW={requirements.totalDemandW} t={t} />
+        <SystemBlock brand="victron" t={t} />
+      </div>
 
-      <p className="text-center text-xs text-gray-400 font-body">{t('screen2.privacy')}</p>
+      <p className="text-xs font-body text-gray-400 mb-4">{t('screen2.disclaimer')}</p>
+
+      {/* Sticky "Continuar" */}
+      <div className="sticky top-14 z-10 -mx-4 px-4 py-3 bg-white border-y border-gray-100 shadow-sm mb-6">
+        <Button onClick={() => goToScreen(3)} className="w-full text-base py-3">
+          {t('screen2.continue_button')} →
+        </Button>
+      </div>
+
+      {/* Editable equipment list */}
+      <div className="mb-8">
+        <h3 className="font-display font-bold text-azul-tormenta text-lg mb-1">
+          {t('screen2.edit_title')}
+        </h3>
+        <p className="font-body text-sm text-gray-500 mb-3">{t('screen2.edit_subtitle')}</p>
+
+        <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
+          {equipmentCatalog.map((item) => {
+            const isChecked = item.equipo in selections
+            const qty = selections[item.equipo] ?? 1
+            return (
+              <div key={item.equipo} className="flex items-center gap-3 px-4 py-3">
+                <input
+                  type="checkbox"
+                  checked={isChecked}
+                  onChange={() => toggleItem(item.equipo)}
+                  className="w-5 h-5 accent-naranja-wr shrink-0 cursor-pointer"
+                />
+                <span className="flex-1 font-body text-carbon text-sm select-none">
+                  {item.equipo}
+                </span>
+                <span className="font-mono text-xs text-gray-400 shrink-0">
+                  {item.potencia_w.toLocaleString('en-US')} W
+                </span>
+                {isChecked && (
+                  <div className="flex items-center gap-1 ml-1 shrink-0">
+                    <button
+                      onClick={() => setItemQty(item.equipo, qty - 1)}
+                      disabled={qty <= 1}
+                      className="w-7 h-7 rounded-full border border-gray-300 font-mono text-base flex items-center justify-center disabled:opacity-30 hover:bg-gray-50"
+                    >
+                      −
+                    </button>
+                    <span className="font-mono w-5 text-center text-sm font-medium">{qty}</span>
+                    <button
+                      onClick={() => setItemQty(item.equipo, qty + 1)}
+                      className="w-7 h-7 rounded-full border border-gray-300 font-mono text-base flex items-center justify-center hover:bg-gray-50"
+                    >
+                      +
+                    </button>
+                  </div>
+                )}
+              </div>
+            )
+          })}
+        </div>
+      </div>
     </div>
   )
 }

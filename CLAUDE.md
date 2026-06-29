@@ -2,171 +2,131 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
-## Project Overview
+## Project context
 
-**WR Energy PMX** — A 4-screen mobile-first web app that helps non-technical users calculate their energy backup needs, captures them as leads, and redirects them to WhatsApp for conversion.
+WR-Energy sells and installs BESS (battery energy storage systems) on the Oaxacan coast. This app is a lead-generation funnel: users select their appliances, get a system recommendation with pricing, and are routed to WhatsApp. The validated audience is men and women 35–55 living on the coast.
 
-Stack: React + Vite (frontend) · FastAPI (backend) · Google Sheets API (data store)
-
-**User flow:** Landing (Screen 0) → Lead Capture (Screen 1) → Equipment Selection (Screen 2) → Results + WhatsApp redirect (Screen 3)
+**Deployed:** Frontend → Netlify, Backend → Railway  
+**Brand:** blue `#1f2f58` (`azul-wr` / `azul-tormenta`), orange `#f47c02` (`naranja-wr` / `amarillo-solar`), white. Mobile-first. Voice: direct, no-nonsense, technical but accessible.
 
 ---
 
-## Dev Commands
+## Commands
 
 ### Backend
 ```bash
 cd backend
-# Windows:
-venv\Scripts\activate
-# Mac/Linux:
-source venv/bin/activate
-
+python3 -m venv .venv
+.venv\Scripts\activate          # or source .venv/bin/activate on Mac/Linux
+pip install -r requirements.txt
+cp .env.example .env            # fill in values
 uvicorn app.main:app --reload --port 8000
 ```
 
-API docs auto-generated at `http://localhost:8000/docs`.
+Required `.env` keys: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `FRONTEND_URL`, `WHATSAPP_NUMBER`, `PORT`, `ENVIRONMENT`
+
+For local dev, `GOOGLE_SERVICE_ACCOUNT_JSON` can be a file path (`./credentials/service_account.json`). In Railway production it holds the raw JSON string.
 
 ### Frontend
 ```bash
 cd frontend
 npm install
-npm run dev      # Vite at http://localhost:5174
-npm run build    # Production build → dist/
-npm run preview  # Preview production build locally
+cp .env.example .env
+npm run dev        # starts at localhost:5174
+npm run build
+npm run preview
 ```
 
-There are no linting or test commands — no ESLint, Vitest, or pytest are configured.
-
-### Environment Setup
-- Copy `backend/.env.example` → `backend/.env`. Required vars: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `WHATSAPP_NUMBER`, `FRONTEND_URL`.
-- Copy `frontend/.env.example` → `frontend/.env`. Required vars: `VITE_API_URL=http://localhost:8000`, `VITE_WHATSAPP_NUMBER`.
-- `GOOGLE_SERVICE_ACCOUNT_JSON` accepts **either** a file path (`./credentials/service_account.json`) **or** the raw JSON content as a string (used on Railway). `sheets_service._get_service()` detects which by checking if the value starts with `{`. Falls back to Application Default Credentials if neither resolves.
-- Optional backend vars (have defaults): `PORT` (default `8000`), `ENVIRONMENT` (default `development`).
+Required `.env` keys: `VITE_API_URL`, `VITE_DEFAULT_LANG`, `VITE_WHATSAPP_NUMBER`
 
 ---
 
 ## Architecture
 
-### Backend (`backend/app/`)
-
-Three route modules map 1:1 to the three API endpoints:
-- `routes/equipment.py` → `GET /get-equipment` — reads `equipos` sheet
-- `routes/systems.py` → `GET /get-systems` — reads `sistemas` sheet
-- `routes/leads.py` → `POST /save-lead` — appends one row to `leads` + one row per equipment item to `equipos_lead`; returns `{ "ok": true, "lead_id": "<8-char hex>" }`
-
-`services/sheets_service.py` has two distinct readers:
-- `read_sheet(sheet_name)` — generic: row 0 is headers, rows 1+ are data. Used for `equipos`.
-- `read_systems_sheet()` — custom parser for `sistemas`: skips header rows by scanning for a known brand name in column 1 using the `_KNOWN_BRANDS` set (`{"ecoflow", "enphase", "victron", "pytes"}`). Columns are read **by index position** (0–11), not by header name. If the sheet column order changes, this breaks silently. **If a new brand is added to the sheet, it must also be added to `_KNOWN_BRANDS` (line 59) or its rows will be silently ignored.**
-
-Column mapping for `sistemas` (by index):
-```
-0  sistema name  |  1  marca  |  2  almacenamiento (kWh)  |  3  potencia (kW)  |  4  phases
-5  MXN subtotal  |  6  MXN IVA  |  7  MXN final price
-8  USD subtotal  |  9  USD IVA  |  10  USD final price  |  11  USD/Wh
-```
-
-`services/calculator.py` is pure Python with no I/O — it is called from the `/get-systems` route after fetching systems from Sheets.
-
-`config.py` loads `.env` via `python-dotenv` and exposes typed settings.
-
-### Frontend (`frontend/src/`)
-
-`App.jsx` is the top-level router — it wraps everything in `CalculatorProvider` and conditionally renders the current screen. **Screen 0 renders without the shared Header/Footer layout**; screens 1–3 share the `Header` + `Footer` wrapper.
-
-State is managed by a single `CalculatorContext` (`context/CalculatorContext.jsx`) that holds: lead data, equipment rows, catalogs loaded at app mount, calculation results, hours-of-backup setting, and current screen number (starts at 0). All screens read/write this shared context — no prop drilling.
-
-- `hooks/useCalculator.js` — wraps context for screen components
-- `hooks/useApi.js` — fetch wrapper with loading/error state
-- `services/api.js` — typed functions calling the three backend endpoints
-- `utils/calculator.js` — frontend mirror of the Python calculation engine (see below)
-- `utils/whatsapp.js` — builds the pre-filled WhatsApp URL from results
-- `i18n/` — i18next config + `es.json` / `en.json`; language persisted in localStorage
-
-Screen 2's equipment table auto-calculates `Demanda (W) = cantidad × potencia_w` inline (non-editable). Screen 3 recalculates in real time when the user changes "Hours of backup" (debounce 300 ms).
-
-### Data (Google Sheets)
-
-Single workbook with **four** tabs: `equipos`, `sistemas`, `leads`, `equipos_lead`. The backend reads `equipos` and `sistemas` on demand; it appends to `leads` (summary row) and `equipos_lead` (one row per equipment item) on `POST /save-lead`. See `docs/google-sheets-setup.md` for Service Account permissions setup.
-
-### Legacy root `index.html`
-
-The static `index.html` at the repo root is a **standalone pre-React landing page** — its content was ported into `frontend/src/components/screens/Screen0_Landing.jsx` (commit `5ae8aa3`). It is not part of the Netlify build (`netlify.toml` sets `base = "frontend"`), so it's effectively orphaned. When asked to edit the landing page, edit `Screen0_Landing.jsx` (+ its CSS file), not this file.
-
-### Deployment
-
-- **Backend → Railway**: `backend/railway.toml` (nixpacks build) + `backend/Procfile` both start `uvicorn app.main:app --host 0.0.0.0 --port $PORT`.
-- **Frontend → Netlify**: `netlify.toml` at repo root builds from `frontend` (`base = "frontend"`, `npm run build`, publish `dist`) and hardcodes `VITE_API_URL` / `VITE_WHATSAPP_NUMBER` as build environment vars — these must be updated there (not just in `frontend/.env`) for production changes to take effect.
-
----
-
-## Calculation Engine
-
-**Critical:** The calculation logic is intentionally duplicated — `backend/app/services/calculator.py` (used at lead-save time) and `frontend/src/utils/calculator.js` (used for real-time Screen 3 updates). Both must be kept in sync. If you change a formula or constant in one, change it in the other.
-
-The key algorithm is **"Immediate Superior"** system selection:
+### Screen flow (no router — `currentScreen` integer in context)
 
 ```
-total_demand_w   = Σ (cantidad × potencia_w)
-system_power_w   = total_demand_w × 0.70
-battery_kwh      = (system_power_w × hours_backup) / 1000 × 0.40
+Screen0_Landing → Screen1_Equipment → Screen2_Recommendation → Screen3_Contact
 ```
-*(The 0.40 factor represents the real-use factor during backup per project spec.)*
 
-**System selection rules:**
-1. Filter by brand (Ecoflow or Enphase separately).
-2. From candidates where `almacenamiento >= required_kwh` AND `potencia × 1000 >= required_w`, pick the one with **smallest capacity** (closest above). Tiebreak: lowest `usd_precio`.
-   - Note: `potencia` in the sheet is in **kW**, demand is in **W** — multiply by 1000 before comparing.
-3. If no candidate qualifies, return the largest system of that brand with `needs_custom_quote: true`.
-4. Victron+Pytes is a UI placeholder only (no backend selection logic needed).
+- **Screen0**: Landing page. CTA navigates to Screen1 (not WhatsApp).
+- **Screen1** (`Screen1_LeadCapture.jsx`): Checkbox list of all cargas. Checking an item shows a +/- counter (default 1). "Añadir" runs `recommendSystems()` client-side and transitions to Screen2.
+- **Screen2** (`Screen2_Equipment.jsx`): Shows system recommendations (Ecoflow / Enphase / Victron placeholder) with full MXN pricing (contado, anticipo/saldo 60/40, MSI monthly). Backup-hours slider recalculates. A sticky "Continuar" button (`sticky top-14`) sits between the recommendation section and the editable equipment list below it. Changes in the lower list also trigger recalculation.
+- **Screen3** (`Screen3_Results.jsx`): Contact form (nombre, WhatsApp, email — lead captured here, not at the start). On submit → `saveLead()` → confirmation screen with optional WhatsApp button.
 
-`recommend_systems()` / `recommendSystems()` is the orchestrator in each implementation.
+### State management
 
----
+All shared state lives in `src/context/CalculatorContext.jsx` via `CalculatorProvider`. The `useCalculator()` hook exposes:
 
-## Pydantic Models (`backend/app/models/schemas.py`)
+| Key | Type | Purpose |
+|---|---|---|
+| `selections` | `{[equipo]: cantidad}` | Only checked items (no entry = unchecked) |
+| `toggleItem(equipo)` | fn | Add/remove from selections |
+| `setItemQty(equipo, qty)` | fn | Change quantity of a checked item |
+| `getSelectedRows()` | fn | Returns `[{equipo, cantidad, potencia_w, demanda_w}]` for engine |
+| `equipmentCatalog` | array | All cargas from `/get-equipment` |
+| `systemsCatalog` | array | All pre-built systems from `/get-systems` |
+| `hoursBackup` | number | Default 4, user-controlled |
+| `results` | object | Output of `recommendSystems()` |
+| `lead` | object | `{nombre, whatsapp, email}` captured at Screen3 |
+| `currentScreen` | number | 0–3 |
+| `goToScreen(n)` | fn | Navigate |
 
-`System` reflects the actual `sistemas` sheet fields:
-- `sistema` (str), `marca` (str), `almacenamiento` (kWh, float), `potencia` (kW, float), `phases` (int), `mxn_precio` (float), `usd_precio` (float), `usd_wh` (float)
+`CalculatorContext` fetches `/get-equipment` and `/get-systems` on mount.
 
-`LeadInput` includes both lead contact data and enriched calculation results:
-- Contact: `nombre`, `whatsapp`, `email` (optional)
-- Result summary: `sistema_recomendado`, `costo_total`, `demanda_total_w`, `potencia_necesaria_w`, `capacidad_necesaria_kwh`, `horas_respaldo`
-- Equipment list: `equipos: list[EquipmentItem]` (each has `equipo`, `cantidad`, `potencia_w`, `demanda_w`)
+### Pricing utility (`src/utils/pricing.js`)
 
----
+`calcPricing(usdEquipo, totalDemandW)` computes MXN pricing from a system's `usd_precio`. Uses hardcoded constants (TC, margins, IVA, material %) until the `parametros` Sheet endpoint is built. Returns `{contado, anticipo, saldo, mensualidad, aplica}`. If `totalDemandW / 1000 < 3kW`, no material or installation cost applies.
 
-## Styling
+### Calculation logic (duplicated frontend/backend)
 
-Tailwind with custom brand tokens (defined in `tailwind.config.js`):
+The selection engine is intentionally mirrored in two places:
+- **`frontend/src/utils/calculator.js`** — runs client-side on Screen2→3 transition and on hours-slider change
+- **`backend/app/services/calculator.py`** — available server-side if needed
 
-| Token | Hex |
-|-------|-----|
-| `azul-tormenta` | `#1B2A4A` |
-| `amarillo-solar` | `#F4C430` |
-| `carbon` | `#1A1A1A` |
-| `hueso` | `#F2F2F2` |
+Core formula:
+```
+totalDemandW = Σ(qty × potencia_w)
+systemPowerW = totalDemandW × 0.70
+batteryKwhRequired = (systemPowerW × hoursBackup / 1000) × 0.40
+```
 
-Fonts: `font-display` (Barlow Condensed, headlines) · `font-body` (Inter) · `font-mono` (JetBrains Mono, numeric data like kWh/W). All loaded via Google Fonts in `index.html`.
+`selectImmediateSuperior(systems, requiredKwh, requiredW, brand)` picks the smallest system meeting both kWh and kW requirements. If none qualifies, returns the biggest with `needs_custom_quote: true`.
 
-Mobile-first: design at 375px baseline, scale up at `sm:` (640px), `md:` (768px), `lg:` (1024px). The equipment table on Screen 2 becomes vertical cards below 640px.
+`recommendSystems()` calls `selectImmediateSuperior` for each brand (Ecoflow, Enphase; Victron is always `null` in MVP).
 
----
+### Backend API (`app/main.py`)
 
-## Key Constraints
+CORS restricted to `FRONTEND_URL`. Three routers:
 
-- **Bilingual:** All UI strings go through i18next — no hardcoded Spanish or English text in components.
-- **CORS:** Backend allows only the origin specified by `FRONTEND_URL` in `.env`.
-- **WhatsApp redirect:** The "Me interesa" button both POSTs to `/save-lead` AND opens `wa.me/{VITE_WHATSAPP_NUMBER}?text=...` with URL-encoded pre-filled message. Both actions happen on the same click.
-- `email` is optional on the lead form; Pydantic validates format only if provided (`Optional[EmailStr]`).
+| Route | Handler | Sheet tab |
+|---|---|---|
+| `GET /get-equipment` | `routes/equipment.py` | `cargas` |
+| `GET /get-systems` | `routes/systems.py` | `catalogo` + `specs_estaciones` |
+| `POST /save-lead` | `routes/leads.py` | `leads` + `equipos_lead` |
 
-## Other Endpoints
+Debug-only endpoints (prefix `/debug/`) exist for inspecting raw Sheet tabs and headers — these are temporary and can be removed.
 
-- `GET /health` — returns `{"status": "ok"}`, used by Railway for liveness checks.
+### Google Sheets as database (`app/services/sheets_service.py`)
 
-## Debug Endpoints
+`read_sheet(sheet_name)` is the generic reader: row 0 = headers, rows 1+ = data, returns `list[dict]`. Always read by column name, never by positional index.
 
-Temporary Sheet-inspection routes (do not remove while debugging data ingestion):
-- `GET /debug/sheet-tabs` — lists all tab names in the workbook
-- `GET /debug/sistemas-raw` — returns first 4 raw rows of `sistemas`
-- `GET /debug/equipos-headers` — returns parsed column headers of `equipos`
+`read_systems_from_catalog()` joins `catalogo` and `specs_estaciones` to generate one system entry per battery count (`min_baterias..max_baterias`), computing total kWh and USD price. This is the authoritative path for `/get-systems`.
+
+`read_systems_sheet()` (legacy, reads `sistemas` tab by position) and `_KNOWN_BRANDS` are still present in the file but are slated for removal — prefer `read_systems_from_catalog()`.
+
+`append_row(sheet_name, row)` appends a single row. Leads write to both `leads` (summary) and `equipos_lead` (line items) with a shared `lead_id`.
+
+Google Sheets credentials: if `GOOGLE_SERVICE_ACCOUNT_JSON` starts with `{`, it's parsed as JSON directly (Railway). If it's a file path that exists, it reads the file. Otherwise falls back to Application Default Credentials.
+
+### i18n
+
+Two languages (ES/EN) via `i18next` + `react-i18next`. Translation files at `src/i18n/es.json` and `src/i18n/en.json`. Language persisted to `localStorage` key `lang`. `VITE_DEFAULT_LANG` sets the fallback. The `LanguageToggle` UI component switches languages at runtime.
+
+### Tailwind tokens
+
+Canonical color aliases are `azul-tormenta` and `amarillo-solar` (mapped to the brand hex values). The bare `azul-wr`/`naranja-wr` names also exist. Do not rename these — the screen components reference them directly. Fonts: `font-display` (Barlow Condensed), `font-body` (Inter), `font-mono` (JetBrains Mono).
+
+### WhatsApp CTA
+
+`src/utils/whatsapp.js` builds the `wa.me` URL with a pre-filled message summarizing kW/kWh requirements. `VITE_WHATSAPP_NUMBER` must be set (digits only, no `+` or spaces). The `window.open()` call in the Screen3 confirmation view must stay synchronous inside the click handler — moving it into a Promise will cause browsers to block the popup.
