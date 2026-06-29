@@ -1,5 +1,5 @@
 from fastapi import APIRouter, HTTPException
-from app.services.sheets_service import read_systems_sheet, _get_raw_sheet
+from app.services.sheets_service import read_systems_from_catalog, _get_raw_sheet
 
 router = APIRouter()
 
@@ -7,7 +7,7 @@ router = APIRouter()
 @router.get("/get-systems")
 async def get_systems():
     try:
-        systems = read_systems_sheet()
+        systems = read_systems_from_catalog()
         return {"systems": systems}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

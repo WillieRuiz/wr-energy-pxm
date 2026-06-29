@@ -18,7 +18,7 @@ def _find(row: dict, candidates: list[str]) -> str:
 @router.get("/get-equipment")
 async def get_equipment():
     try:
-        rows = read_sheet("equipos")
+        rows = read_sheet("cargas")
         equipment = []
         for r in rows:
             nombre = _find(r, _EQUIPO_KEYS)
@@ -39,7 +39,7 @@ async def get_equipment():
 async def debug_equipos():
     """Temporal: devuelve los nombres exactos de columnas del Sheet."""
     try:
-        rows = read_sheet("equipos")
+        rows = read_sheet("cargas")
         return {"headers": list(rows[0].keys()) if rows else [], "sample": rows[0] if rows else {}}
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))
