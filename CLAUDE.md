@@ -16,8 +16,8 @@ WR-Energy sells and installs BESS (battery energy storage systems) on the Oaxaca
 ### Backend
 ```bash
 cd backend
-python3 -m venv .venv
-.venv\Scripts\activate          # or source .venv/bin/activate on Mac/Linux
+python -m venv venv
+venv\Scripts\activate          # or source venv/bin/activate on Mac/Linux
 pip install -r requirements.txt
 cp .env.example .env            # fill in values
 uvicorn app.main:app --reload --port 8000
@@ -37,7 +37,7 @@ npm run build
 npm run preview
 ```
 
-Required `.env` keys: `VITE_API_URL`, `VITE_DEFAULT_LANG`, `VITE_WHATSAPP_NUMBER`
+Required `.env` keys: `VITE_DEFAULT_LANG`, `VITE_WHATSAPP_NUMBER`. In dev, leave `VITE_API_URL` empty — Vite proxies all API calls (`/get-*`, `/save-*`, `/recommend`, `/health`, `/debug/*`) to `localhost:8000`, so there's no CORS issue. In prod, set `VITE_API_URL` to the Railway backend URL.
 
 ---
 
@@ -46,17 +46,17 @@ Required `.env` keys: `VITE_API_URL`, `VITE_DEFAULT_LANG`, `VITE_WHATSAPP_NUMBER
 ### Screen flow (no router — `currentScreen` integer in context)
 
 ```
-Screen0_Landing → Screen1_Equipment → Screen2_Recommendation → Screen3_Contact
+Screen0_Landing → Screen1_LeadCapture → Screen2_Equipment → Screen3_Results
 ```
 
 - **Screen0**: Landing page. CTA navigates to Screen1 (not WhatsApp).
-- **Screen1** (`Screen1_LeadCapture.jsx`): Checkbox list of all cargas. Checking an item shows a +/- counter (default 1). "Añadir" runs `recommendSystems()` client-side and transitions to Screen2.
-- **Screen2** (`Screen2_Equipment.jsx`): Shows system recommendations (Ecoflow / Enphase / Victron placeholder) with full MXN pricing (contado, anticipo/saldo 60/40, MSI monthly). Backup-hours slider recalculates. A sticky "Continuar" button (`sticky top-14`) sits between the recommendation section and the editable equipment list below it. Changes in the lower list also trigger recalculation.
-- **Screen3** (`Screen3_Results.jsx`): Contact form (nombre, WhatsApp, email — lead captured here, not at the start). On submit → `saveLead()` → confirmation screen with optional WhatsApp button.
+- **Screen1** (`Screen1_LeadCapture.jsx`): Checkbox list of all cargas from `/get-equipment`. Checking an item shows a +/- counter (default 1). "Añadir" calls `POST /recommend` server-side and stores results in context, then transitions to Screen2.
+- **Screen2** (`Screen2_Equipment.jsx`): Shows system recommendation (Ecoflow; Victron is always a placeholder in MVP) with MXN pricing (contado, anticipo/saldo 60/40, MSI monthly). Backup-hours slider debounces a new `POST /recommend` call. A sticky "Continuar" button (`sticky top-14`) sits above the editable equipment list. Changes in the lower list also trigger recalculation.
+- **Screen3** (`Screen3_Results.jsx`): Contact form (nombre, WhatsApp, email — lead captured here, not at the start). On submit → `POST /save-lead` → confirmation screen with optional WhatsApp button.
 
 ### State management
 
-All shared state lives in `src/context/CalculatorContext.jsx` via `CalculatorProvider`. The `useCalculator()` hook exposes:
+All shared state lives in `src/context/CalculatorContext.jsx` via `CalculatorProvider`. The `useCalculator()` hook (at `src/hooks/useCalculator.js`) exposes:
 
 | Key | Type | Purpose |
 |---|---|---|
@@ -64,46 +64,43 @@ All shared state lives in `src/context/CalculatorContext.jsx` via `CalculatorPro
 | `toggleItem(equipo)` | fn | Add/remove from selections |
 | `setItemQty(equipo, qty)` | fn | Change quantity of a checked item |
 | `getSelectedRows()` | fn | Returns `[{equipo, cantidad, potencia_w, demanda_w}]` for engine |
-| `equipmentCatalog` | array | All cargas from `/get-equipment` |
-| `systemsCatalog` | array | All pre-built systems from `/get-systems` |
+| `equipmentCatalog` | array | All cargas from `/get-equipment` (fetched on mount) |
 | `hoursBackup` | number | Default 4, user-controlled |
-| `results` | object | Output of `recommendSystems()` |
+| `results` | object | Output of `POST /recommend` — `{ requirements, recommendations }` |
 | `lead` | object | `{nombre, whatsapp, email}` captured at Screen3 |
 | `currentScreen` | number | 0–3 |
 | `goToScreen(n)` | fn | Navigate |
 
-`CalculatorContext` fetches `/get-equipment` and `/get-systems` on mount.
+`CalculatorContext` fetches only `/get-equipment` on mount. Systems data is not pre-fetched; it is computed on demand by the backend `/recommend` endpoint.
 
 ### Pricing utility (`src/utils/pricing.js`)
 
 `calcPricing(usdEquipo, totalDemandW)` computes MXN pricing from a system's `usd_precio`. Uses hardcoded constants (TC, margins, IVA, material %) until the `parametros` Sheet endpoint is built. Returns `{contado, anticipo, saldo, mensualidad, aplica}`. If `totalDemandW / 1000 < 3kW`, no material or installation cost applies.
 
-### Calculation logic (duplicated frontend/backend)
+### Calculation logic (server-side, with a frontend mirror for requirements only)
 
-The selection engine is intentionally mirrored in two places:
-- **`frontend/src/utils/calculator.js`** — runs client-side on Screen2→3 transition and on hours-slider change
-- **`backend/app/services/calculator.py`** — available server-side if needed
+Recommendations run server-side via `POST /recommend` in `backend/app/services/calculator.py`. The frontend's `src/utils/calculator.js` only contains `calculateRequirements` (demand math) for reference — it is not used for the actual recommendation.
 
-Core formula:
+Core formula in `calculator.py`:
 ```
 totalDemandW = Σ(qty × potencia_w)
-systemPowerW = totalDemandW × 0.70
+# If totalDemandW < 3 kW: no demand factor, no installation cost
+systemPowerW = totalDemandW × 0.70  (skipped if < 3 kW)
 batteryKwhRequired = (systemPowerW × hoursBackup / 1000) × 0.40
 ```
 
-`selectImmediateSuperior(systems, requiredKwh, requiredW, brand)` picks the smallest system meeting both kWh and kW requirements. If none qualifies, returns the biggest with `needs_custom_quote: true`.
-
-`recommendSystems()` calls `selectImmediateSuperior` for each brand (Ecoflow, Enphase; Victron is always `null` in MVP).
+`select_ecoflow(stations, system_power_w, battery_kwh_required)` picks the smallest Ecoflow station that meets both kW and kWh requirements, stepping up battery count or station tier as needed. If nothing fits, returns the biggest config with `needs_custom_quote: true`. Enphase and Victron/Pytes are always `null` in MVP.
 
 ### Backend API (`app/main.py`)
 
-CORS restricted to `FRONTEND_URL`. Three routers:
+CORS restricted to `FRONTEND_URL`. Four routers:
 
-| Route | Handler | Sheet tab |
+| Route | Handler | Description |
 |---|---|---|
-| `GET /get-equipment` | `routes/equipment.py` | `cargas` |
-| `GET /get-systems` | `routes/systems.py` | `catalogo` + `specs_estaciones` |
-| `POST /save-lead` | `routes/leads.py` | `leads` + `equipos_lead` |
+| `GET /get-equipment` | `routes/equipment.py` | Reads `cargas` Sheet tab |
+| `GET /get-systems` | `routes/systems.py` | Joins `catalogo` + `specs_estaciones` |
+| `POST /recommend` | `routes/recommend.py` | Runs recommendation engine server-side |
+| `POST /save-lead` | `routes/leads.py` | Writes to `leads` + `equipos_lead` tabs |
 
 Debug-only endpoints (prefix `/debug/`) exist for inspecting raw Sheet tabs and headers — these are temporary and can be removed.
 
@@ -111,13 +108,19 @@ Debug-only endpoints (prefix `/debug/`) exist for inspecting raw Sheet tabs and 
 
 `read_sheet(sheet_name)` is the generic reader: row 0 = headers, rows 1+ = data, returns `list[dict]`. Always read by column name, never by positional index.
 
-`read_systems_from_catalog()` joins `catalogo` and `specs_estaciones` to generate one system entry per battery count (`min_baterias..max_baterias`), computing total kWh and USD price. This is the authoritative path for `/get-systems`.
+`read_station_specs()` enriches `specs_estaciones` rows with prices from `catalogo` and returns the list of dicts used directly by the recommendation engine. This is what `POST /recommend` calls.
 
-`read_systems_sheet()` (legacy, reads `sistemas` tab by position) and `_KNOWN_BRANDS` are still present in the file but are slated for removal — prefer `read_systems_from_catalog()`.
+`read_systems_from_catalog()` generates one entry per valid battery count (for `GET /get-systems`). It joins `catalogo` and `specs_estaciones` similarly but produces flattened system rows instead of raw station specs.
+
+`read_systems_sheet()` (legacy, reads `sistemas` tab by position) and `_KNOWN_BRANDS` are still present but slated for removal — prefer `read_station_specs()` / `read_systems_from_catalog()`.
 
 `append_row(sheet_name, row)` appends a single row. Leads write to both `leads` (summary) and `equipos_lead` (line items) with a shared `lead_id`.
 
 Google Sheets credentials: if `GOOGLE_SERVICE_ACCOUNT_JSON` starts with `{`, it's parsed as JSON directly (Railway). If it's a file path that exists, it reads the file. Otherwise falls back to Application Default Credentials.
+
+### `useApi` hook (`src/hooks/useApi.js`)
+
+Generic wrapper for async API calls: `useApi(fn)` returns `{ call, loading, error }`. `call(...args)` invokes `fn`, manages loading/error state, and re-throws on failure.
 
 ### i18n
 

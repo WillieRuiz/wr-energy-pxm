@@ -10,7 +10,7 @@ import Screen3_Contact from './components/screens/Screen3_Results.jsx'
 function AppContent() {
   const { currentScreen, goToScreen } = useCalculator()
 
-  if (currentScreen === 0) return <Screen0_Landing onStart={() => goToScreen(1)} />
+  if (currentScreen === 0) return <Screen0_Landing />
 
   return (
     <div className="min-h-screen bg-white flex flex-col">

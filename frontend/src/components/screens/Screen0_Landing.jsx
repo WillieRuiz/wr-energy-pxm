@@ -1,5 +1,7 @@
 import { useState, useEffect } from 'react'
 import './Screen0_Landing.css'
+import { useCalculator } from '../../hooks/useCalculator.js'
+import { trackEvent } from '../../utils/analytics.js'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
 const WHATSAPP_MESSAGE = 'Hola, me interesa instalar un sistema de respaldo en mi casa, ¿me pueden dar más información?'
@@ -28,7 +30,8 @@ const STATS = [
   { num: '0', label: 'Litros de gasolina que necesita el sistema instalado' },
 ]
 
-export default function Screen0_Landing({ onStart }) {
+export default function Screen0_Landing() {
+  const { goToScreen } = useCalculator()
   const [pulsed, setPulsed] = useState(false)
 
   useEffect(() => {
@@ -39,10 +42,13 @@ export default function Screen0_Landing({ onStart }) {
     return () => clearTimeout(t)
   }, [])
 
+  const handleCalcCTA = () => {
+    trackEvent('cta_click', { tipo: 'calculadora_landing' })
+    goToScreen(1)
+  }
+
   const handleWA = () => {
-    if (typeof window.gtag === 'function') {
-      window.gtag('event', 'click_whatsapp', { event_category: 'lead', event_label: 'landing_cta' })
-    }
+    trackEvent('cta_click', { tipo: 'whatsapp_landing' })
   }
 
   return (
@@ -63,7 +69,7 @@ export default function Screen0_Landing({ onStart }) {
           En la costa la luz se va y no avisa. Tu refri, tu clima, tu bomba y tu internet se apagan contigo. Un sistema de baterías entra solo en milisegundos — ni te enteras del apagón.
         </p>
         <button
-          onClick={onStart}
+          onClick={handleCalcCTA}
           className="lp-btn-primary"
           style={{ maxWidth: '360px', marginTop: '2rem' }}
         >
@@ -167,7 +173,7 @@ export default function Screen0_Landing({ onStart }) {
         </h2>
         <p>Usa la calculadora y en 2 minutos sabes qué sistema necesitas y cuánto cuesta.</p>
         <button
-          onClick={onStart}
+          onClick={handleCalcCTA}
           className="lp-btn-primary"
           style={{ maxWidth: '360px', margin: '0 auto 0.75rem' }}
         >
@@ -192,7 +198,7 @@ export default function Screen0_Landing({ onStart }) {
       <div className="lp-cta-fixed">
         <div style={{ display: 'flex', gap: '0.625rem', maxWidth: '480px', margin: '0 auto' }}>
           <button
-            onClick={onStart}
+            onClick={handleCalcCTA}
             className={`lp-btn-primary${pulsed ? ' lp-pulsed' : ''}`}
             style={{ flex: 1 }}
           >

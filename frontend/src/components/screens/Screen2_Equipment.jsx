@@ -1,5 +1,6 @@
 import { useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { trackEvent } from '../../utils/analytics.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
 import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
@@ -94,6 +95,10 @@ export default function Screen2_Recommendation() {
     getSelectedRows,
     goToScreen,
   } = useCalculator()
+
+  useEffect(() => {
+    trackEvent('screen_view', { pantalla: 'equipment' })
+  }, [])
 
   // Debounced recalculate — skips first render (results already set by Screen1)
   const isFirst = useRef(true)

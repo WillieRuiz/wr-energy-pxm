@@ -1,0 +1,3 @@
+User-agent: *
+Allow: /
+Sitemap: https://cute-frangipane-4a9443.netlify.app/sitemap.xml

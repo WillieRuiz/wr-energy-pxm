@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { trackEvent } from '../../utils/analytics.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
 import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
@@ -20,6 +21,10 @@ export default function Screen1_Equipment() {
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
   const selectedCount = Object.keys(selections).length
+
+  useEffect(() => {
+    trackEvent('screen_view', { pantalla: 'lead_capture' })
+  }, [])
 
   const handleAdd = async () => {
     const equipos = equipmentCatalog

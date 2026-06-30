@@ -1,5 +1,6 @@
-import { useState } from 'react'
+import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
+import { trackEvent } from '../../utils/analytics.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
 import Input from '../ui/Input.jsx'
 import Button from '../ui/Button.jsx'
@@ -22,6 +23,10 @@ export default function Screen3_Contact() {
   const { t, i18n } = useTranslation()
   const { results, getSelectedRows, hoursBackup } = useCalculator()
 
+  useEffect(() => {
+    trackEvent('screen_view', { pantalla: 'results' })
+  }, [])
+
   const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '' })
   const [touched, setTouched] = useState({})
   const [loading, setLoading] = useState(false)
@@ -35,6 +40,7 @@ export default function Screen3_Contact() {
 
   const handleSubmit = async () => {
     if (!isValid) return
+    trackEvent('lead_form_submit')
     setLoading(true)
     const { requirements, recommendations } = results || {}
     const { ecoflow, enphase } = recommendations || {}
@@ -79,7 +85,10 @@ export default function Screen3_Contact() {
           <p className="font-body text-gray-500">{t('screen3.success_body')}</p>
         </div>
         <Button
-          onClick={() => window.open(buildWhatsAppUrl(results, i18n.language), '_blank')}
+          onClick={() => {
+            trackEvent('whatsapp_click_results')
+            window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
+          }}
           className="w-full text-base py-4"
         >
           {t('screen3.whatsapp_button')}
