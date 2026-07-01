@@ -38,6 +38,8 @@
     "error_email": "Ingresa un correo electrónico válido.",
     "success_title": "¡Listo!",
     "success_body": "Recibimos tu solicitud. Estamos preparando tu propuesta y te contactamos pronto.",
-    "whatsapp_button": "Abrir WhatsApp"
+    "whatsapp_button": "Abrir WhatsApp",
+    "success_body_call": "Recibimos tu solicitud. Agenda una llamada y te explicamos tu propuesta en detalle.",
+    "calendly_button": "Agendar llamada →"
   }
 }

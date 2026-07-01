@@ -1,0 +1,13 @@
+# System packages required by WeasyPrint (PDF generation)
+# Railway (nixpacks) installs these before pip dependencies
+[phases.setup]
+nixPkgs = [
+  "pango",
+  "cairo",
+  "gdk-pixbuf",
+  "libffi",
+  "fontconfig",
+  "gobject-introspection",
+  "harfbuzz",
+  "pkg-config",
+]

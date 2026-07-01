@@ -10,6 +10,8 @@ export function CalculatorProvider({ children }) {
   const [equipmentCatalog, setEquipmentCatalog] = useState([])
   const [currentScreen, setCurrentScreen] = useState(0)
   const [lead, setLead] = useState({ nombre: '', whatsapp: '', email: '' })
+  // Assigned once at session start; stays fixed for the lifetime of the provider
+  const [abTestGroup] = useState(() => (Math.random() < 0.5 ? 'pdf' : 'call'))
 
   useEffect(() => {
     getEquipment()
@@ -61,6 +63,7 @@ export function CalculatorProvider({ children }) {
         goToScreen,
         lead,
         setLead,
+        abTestGroup,
       }}
     >
       {children}

@@ -7,6 +7,11 @@ import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
 import { saveLead } from '../../services/api.js'
 import { buildWhatsAppUrl } from '../../utils/whatsapp.js'
+import { calcPricing } from '../../utils/pricing.js'
+
+// TODO: Create your Calendly event and set VITE_CALENDLY_URL in Netlify before
+// the "call" A/B group is functional in production.
+const CALENDLY_URL = import.meta.env.VITE_CALENDLY_URL || ''
 
 const PHONE_RE = /^\+?[\d\s\-(). ]{10,}$/
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
@@ -21,11 +26,12 @@ function validate(form, t) {
 
 export default function Screen3_Contact() {
   const { t, i18n } = useTranslation()
-  const { results, getSelectedRows, hoursBackup } = useCalculator()
+  const { results, getSelectedRows, hoursBackup, abTestGroup } = useCalculator()
 
   useEffect(() => {
     trackEvent('screen_view', { pantalla: 'results' })
-  }, [])
+    trackEvent('ab_test_assigned', { group: abTestGroup })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   const [form, setForm] = useState({ nombre: '', whatsapp: '', email: '' })
   const [touched, setTouched] = useState({})
@@ -46,6 +52,8 @@ export default function Screen3_Contact() {
     const { ecoflow, enphase } = recommendations || {}
     const sistemaRecomendado = [ecoflow?.sistema, enphase?.sistema].filter(Boolean).join(' | ')
     const costoTotal = (ecoflow?.usd_precio || 0) + (enphase?.usd_precio || 0)
+    const totalDemandW = requirements?.totalDemandW || 0
+    const pricing = calcPricing(costoTotal, totalDemandW)
     try {
       await saveLead({
         nombre: form.nombre,
@@ -53,7 +61,9 @@ export default function Screen3_Contact() {
         ...(form.email && { email: form.email }),
         sistema_recomendado: sistemaRecomendado,
         costo_total: costoTotal,
-        demanda_total_w: requirements?.totalDemandW || 0,
+        precio_contado_mxn: pricing.contado,
+        precio_msi_mxn: pricing.mensualidad,
+        demanda_total_w: totalDemandW,
         potencia_necesaria_w: requirements?.systemPowerW || 0,
         capacidad_necesaria_kwh: requirements?.batteryKwhRequired || 0,
         horas_respaldo: hoursBackup,
@@ -63,6 +73,7 @@ export default function Screen3_Contact() {
           potencia_w: r.potencia_w,
           demanda_w: r.demanda_w,
         })),
+        ab_test_group: abTestGroup,
       })
     } catch {
       // Lead save failure doesn't block the user
@@ -73,6 +84,7 @@ export default function Screen3_Contact() {
   }
 
   if (submitted) {
+    const isCallGroup = abTestGroup === 'call'
     return (
       <div className="max-w-md mx-auto px-4 py-12 flex flex-col items-center text-center gap-6">
         <div className="w-16 h-16 rounded-full bg-green-100 flex items-center justify-center">
@@ -82,17 +94,31 @@ export default function Screen3_Contact() {
           <h2 className="font-display font-bold text-azul-tormenta text-3xl mb-2">
             {t('screen3.success_title')}
           </h2>
-          <p className="font-body text-gray-500">{t('screen3.success_body')}</p>
+          <p className="font-body text-gray-500">
+            {isCallGroup ? t('screen3.success_body_call') : t('screen3.success_body')}
+          </p>
         </div>
-        <Button
-          onClick={() => {
-            trackEvent('whatsapp_click_results')
-            window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
-          }}
-          className="w-full text-base py-4"
-        >
-          {t('screen3.whatsapp_button')}
-        </Button>
+        {isCallGroup ? (
+          <Button
+            onClick={() => {
+              trackEvent('calendly_click_results')
+              window.open(CALENDLY_URL, '_blank')
+            }}
+            className="w-full text-base py-4"
+          >
+            {t('screen3.calendly_button')}
+          </Button>
+        ) : (
+          <Button
+            onClick={() => {
+              trackEvent('whatsapp_click_results')
+              window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
+            }}
+            className="w-full text-base py-4"
+          >
+            {t('screen3.whatsapp_button')}
+          </Button>
+        )}
       </div>
     )
   }

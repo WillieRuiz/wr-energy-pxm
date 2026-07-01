@@ -37,6 +37,11 @@ class LeadInput(BaseModel):
     potencia_necesaria_w: float = 0
     capacidad_necesaria_kwh: float = 0
     horas_respaldo: float = 4
+    # MXN prices as computed and shown to the user in Screen2
+    precio_contado_mxn: Optional[float] = None
+    precio_msi_mxn: Optional[float] = None   # mensualidad 12 MSI
     # Relational equipment list
     equipos: list[EquipmentItem] = []
     fecha: Optional[datetime] = None
+    # A/B test group assigned by the frontend ("pdf" | "call")
+    ab_test_group: Optional[str] = None
