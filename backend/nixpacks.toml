@@ -11,3 +11,11 @@ nixPkgs = [
   "harfbuzz",
   "pkg-config",
 ]
+
+# nixpacks auto-generates "python -m venv" but in the nix env the binary
+# is "python3" — override the install phase to use the correct name
+[phases.install]
+cmds = [
+  "python3 -m venv --copies /opt/venv",
+  ". /opt/venv/bin/activate && pip install -r requirements.txt",
+]
