@@ -45,3 +45,5 @@ class LeadInput(BaseModel):
     fecha: Optional[datetime] = None
     # A/B test group assigned by the frontend ("pdf" | "call")
     ab_test_group: Optional[str] = None
+    # UI language at time of submission ("es" | "en")
+    language: Optional[str] = "es"

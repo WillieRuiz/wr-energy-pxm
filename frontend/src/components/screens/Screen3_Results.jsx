@@ -74,6 +74,7 @@ export default function Screen3_Contact() {
           demanda_w: r.demanda_w,
         })),
         ab_test_group: abTestGroup,
+        language: i18n.language,
       })
     } catch {
       // Lead save failure doesn't block the user

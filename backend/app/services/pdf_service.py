@@ -9,10 +9,74 @@ _MESES = [
     "julio", "agosto", "septiembre", "octubre", "noviembre", "diciembre",
 ]
 
+_MONTHS = [
+    "January", "February", "March", "April", "May", "June",
+    "July", "August", "September", "October", "November", "December",
+]
+
 
 def _fecha_es(dt: datetime) -> str:
-    """Cross-platform, locale-independent Spanish date."""
     return f"{dt.day} de {_MESES[dt.month - 1]} de {dt.year}"
+
+
+def _fecha_en(dt: datetime) -> str:
+    return f"{_MONTHS[dt.month - 1]} {dt.day}, {dt.year}"
+
+
+_STRINGS = {
+    "es": {
+        "brand_sub": "Sistemas de respaldo · Costa de Oaxaca",
+        "doc_title": "Propuesta Preliminar",
+        "doc_note": "Sujeta a visita de diagnóstico en sitio",
+        "prepared_for": "Preparada para",
+        "sec_equipment": "Cargas seleccionadas",
+        "col_equipo": "Equipo",
+        "col_qty": "Cant.",
+        "col_power": "Potencia&nbsp;W",
+        "col_demand": "Demanda&nbsp;W",
+        "total_demand": "Demanda total",
+        "sec_capacity": "Capacidad recomendada",
+        "lbl_power": "Potencia del sistema",
+        "lbl_battery": "Banco de baterías",
+        "lbl_backup": "Horas de respaldo",
+        "sec_system": "Sistema recomendado",
+        "sys_tag": "Sistema",
+        "price_tag": "Precio de contado c/IVA",
+        "disclaimer": (
+            "<strong>Propuesta preliminar</strong> sujeta a visita de diagnóstico en sitio. "
+            "Precio referencial con IVA incluido; el costo final puede variar según condiciones "
+            "de instalación y tipo de cambio vigente. "
+            "<strong>Sin comisiones de proveedor</strong> — WR Energy PXM trabaja directamente con el cliente."
+        ),
+        "footer_loc": "WR Energy PXM · Puerto Escondido, Oaxaca, México",
+    },
+    "en": {
+        "brand_sub": "Backup Systems · Oaxacan Coast",
+        "doc_title": "Preliminary Proposal",
+        "doc_note": "Subject to on-site diagnostic visit",
+        "prepared_for": "Prepared for",
+        "sec_equipment": "Selected Loads",
+        "col_equipo": "Equipment",
+        "col_qty": "Qty.",
+        "col_power": "Power&nbsp;W",
+        "col_demand": "Demand&nbsp;W",
+        "total_demand": "Total demand",
+        "sec_capacity": "Recommended Capacity",
+        "lbl_power": "System power",
+        "lbl_battery": "Battery bank",
+        "lbl_backup": "Backup hours",
+        "sec_system": "Recommended System",
+        "sys_tag": "System",
+        "price_tag": "Cash price w/VAT",
+        "disclaimer": (
+            "<strong>Preliminary proposal</strong> subject to on-site diagnostic visit. "
+            "Reference price includes VAT; final cost may vary based on installation conditions "
+            "and applicable exchange rate. "
+            "<strong>No supplier commissions</strong> — WR Energy PXM works directly with the client."
+        ),
+        "footer_loc": "WR Energy PXM · Puerto Escondido, Oaxaca, México",
+    },
+}
 
 
 # ---------------------------------------------------------------------------
@@ -147,7 +211,7 @@ body {
     <div class="header-row">
       <div>
         <div class="brand">WR<span class="brand-dot">.</span>Energy PXM</div>
-        <div class="brand-sub">Sistemas de respaldo · Costa de Oaxaca</div>
+        <div class="brand-sub">{{ s.brand_sub }}</div>
       </div>
       <div class="header-meta">
         Ref: {{ lead_id }}<br>
@@ -156,25 +220,25 @@ body {
     </div>
   </div>
 
-  <div class="doc-title">Propuesta Preliminar</div>
-  <div class="doc-note">Sujeta a visita de diagnóstico en sitio</div>
+  <div class="doc-title">{{ s.doc_title }}</div>
+  <div class="doc-note">{{ s.doc_note }}</div>
 
   <!-- Client -->
   <div class="client-block">
-    <div class="micro-label">Preparada para</div>
+    <div class="micro-label">{{ s.prepared_for }}</div>
     <div class="client-name">{{ nombre }}</div>
     <div class="client-sub">{{ whatsapp }}{% if email %} · {{ email }}{% endif %}</div>
   </div>
 
   <!-- Equipment table -->
-  <div class="section-head">Cargas seleccionadas</div>
+  <div class="section-head">{{ s.sec_equipment }}</div>
   <table class="eq-table">
     <thead>
       <tr>
-        <th>Equipo</th>
-        <th class="r">Cant.</th>
-        <th class="r">Potencia&nbsp;W</th>
-        <th class="r">Demanda&nbsp;W</th>
+        <th>{{ s.col_equipo }}</th>
+        <th class="r">{{ s.col_qty }}</th>
+        <th class="r">{{ s.col_power | safe }}</th>
+        <th class="r">{{ s.col_demand | safe }}</th>
       </tr>
     </thead>
     <tbody>
@@ -189,31 +253,31 @@ body {
     </tbody>
     <tfoot>
       <tr>
-        <td colspan="3">Demanda total</td>
+        <td colspan="3">{{ s.total_demand }}</td>
         <td class="r">{{ "%.0f"|format(demanda_total_w) }}&nbsp;W</td>
       </tr>
     </tfoot>
   </table>
 
   <!-- Summary cards -->
-  <div class="section-head">Capacidad recomendada</div>
+  <div class="section-head">{{ s.sec_capacity }}</div>
   <table class="summary-table">
     <tr>
       <td>
         <div class="s-card">
-          <div class="s-label">Potencia del sistema</div>
+          <div class="s-label">{{ s.lbl_power }}</div>
           <div class="s-value">{{ "%.1f"|format(potencia_kw) }}<span class="s-unit"> kW</span></div>
         </div>
       </td>
       <td>
         <div class="s-card">
-          <div class="s-label">Banco de baterías</div>
+          <div class="s-label">{{ s.lbl_battery }}</div>
           <div class="s-value">{{ "%.1f"|format(capacidad_kwh) }}<span class="s-unit"> kWh</span></div>
         </div>
       </td>
       <td>
         <div class="s-card">
-          <div class="s-label">Horas de respaldo</div>
+          <div class="s-label">{{ s.lbl_backup }}</div>
           <div class="s-value">{{ horas_respaldo|int }}<span class="s-unit"> hrs</span></div>
         </div>
       </td>
@@ -221,32 +285,27 @@ body {
   </table>
 
   <!-- System recommendation -->
-  <div class="section-head">Sistema recomendado</div>
+  <div class="section-head">{{ s.sec_system }}</div>
   <div class="system-box">
     <div class="system-inner">
       <div>
-        <div class="system-tag">Sistema</div>
+        <div class="system-tag">{{ s.sys_tag }}</div>
         <div class="system-name">{{ sistema_recomendado }}</div>
       </div>
       <div>
-        <div class="price-tag">Precio de contado c/IVA</div>
-        <div class="price-value">${{ "{:,.0f}".format(precio_contado_mxn) }} MXN</div>
+        <div class="price-tag">{{ s.price_tag }}</div>
+        <div class="price-value">${{ "{:,.0f}".format(price_value) }} {{ price_currency }}</div>
       </div>
     </div>
   </div>
 
   <!-- Disclaimer -->
-  <div class="disclaimer">
-    <strong>Propuesta preliminar</strong> sujeta a visita de diagnóstico en sitio.
-    Precio referencial con IVA incluido; el costo final puede variar según condiciones
-    de instalación y tipo de cambio vigente.
-    <strong>Sin comisiones de proveedor</strong> — WR Energy PXM trabaja directamente con el cliente.
-  </div>
+  <div class="disclaimer">{{ s.disclaimer | safe }}</div>
 
   <!-- Footer -->
   <div class="footer">
     <div class="footer-inner">
-      <div>WR Energy PXM · Puerto Escondido, Oaxaca, México</div>
+      <div>{{ s.footer_loc }}</div>
       <div>wrenergymexico.com</div>
     </div>
   </div>
@@ -261,9 +320,17 @@ def generate_proposal_pdf(lead, fecha: datetime, lead_id: str) -> bytes:
     Renders the proposal HTML template and returns PDF bytes.
     Does not write to disk — caller is responsible for storage.
     """
-    fecha_str = _fecha_es(fecha) if hasattr(fecha, "strftime") else str(fecha)
+    lang = (getattr(lead, "language", None) or "es").split("-")[0].lower()
+    if lang not in _STRINGS:
+        lang = "es"
+
+    s = _STRINGS[lang]
+    fecha_str = (_fecha_en(fecha) if lang == "en" else _fecha_es(fecha)) if hasattr(fecha, "strftime") else str(fecha)
+    price_value = lead.costo_total if lang == "en" else (lead.precio_contado_mxn or 0)
+    price_currency = "USD" if lang == "en" else "MXN"
 
     html_str = Template(_HTML_TEMPLATE).render(
+        s=s,
         lead_id=lead_id,
         fecha_str=fecha_str,
         nombre=lead.nombre,
@@ -275,7 +342,8 @@ def generate_proposal_pdf(lead, fecha: datetime, lead_id: str) -> bytes:
         capacidad_kwh=lead.capacidad_necesaria_kwh,
         horas_respaldo=lead.horas_respaldo,
         sistema_recomendado=lead.sistema_recomendado,
-        precio_contado_mxn=lead.precio_contado_mxn or 0,
+        price_value=price_value,
+        price_currency=price_currency,
     )
 
     try:
