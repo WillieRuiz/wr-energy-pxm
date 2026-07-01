@@ -34,7 +34,7 @@ def upload_pdf(pdf_bytes: bytes, filename: str, bucket_name: str) -> str:
         io.BytesIO(pdf_bytes),
         content_type="application/pdf",
     )
-    blob.make_public()
-    public_url = blob.public_url
+    # Public URL works because bucket has allUsers:objectViewer at IAM level
+    public_url = f"https://storage.googleapis.com/{bucket_name}/propuestas/{filename}"
     logger.info(f"PDF uploaded to GCS: {filename} → {public_url}")
     return public_url
