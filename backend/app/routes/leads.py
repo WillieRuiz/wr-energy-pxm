@@ -5,8 +5,8 @@ from datetime import datetime, timezone
 from app.models.schemas import LeadInput
 from app.services.sheets_service import append_row
 from app.services.pdf_service import generate_proposal_pdf
-from app.services.drive_service import upload_pdf
-from app.config import GOOGLE_DRIVE_FOLDER_ID
+from app.services.storage_service import upload_pdf
+from app.config import GOOGLE_STORAGE_BUCKET
 
 logger = logging.getLogger(__name__)
 router = APIRouter()
@@ -21,12 +21,12 @@ async def save_lead(lead: LeadInput):
         # ── PDF generation + Drive upload (non-blocking on failure) ──────────
         proposal_url = ""
         try:
-            if not GOOGLE_DRIVE_FOLDER_ID:
-                raise ValueError("GOOGLE_DRIVE_FOLDER_ID is not set")
+            if not GOOGLE_STORAGE_BUCKET:
+                raise ValueError("GOOGLE_STORAGE_BUCKET is not set")
             pdf_bytes = generate_proposal_pdf(lead, fecha, lead_id)
             safe_name = lead.nombre.replace(" ", "_")[:40]
             filename = f"propuesta_{lead_id}_{safe_name}.pdf"
-            proposal_url = upload_pdf(pdf_bytes, filename, GOOGLE_DRIVE_FOLDER_ID)
+            proposal_url = upload_pdf(pdf_bytes, filename, GOOGLE_STORAGE_BUCKET)
         except Exception as pdf_err:
             logger.error(f"PDF/Drive failed for lead {lead_id}: {pdf_err}", exc_info=True)
             # Lead is saved regardless — never lose a lead over a PDF error
