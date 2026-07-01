@@ -1,7 +1,6 @@
 import logging
 from datetime import datetime
 from jinja2 import Template
-from weasyprint import HTML
 
 logger = logging.getLogger(__name__)
 
@@ -278,5 +277,10 @@ def generate_proposal_pdf(lead, fecha: datetime, lead_id: str) -> bytes:
         sistema_recomendado=lead.sistema_recomendado,
         costo_total=lead.costo_total,
     )
+
+    try:
+        from weasyprint import HTML
+    except OSError as e:
+        raise RuntimeError(f"WeasyPrint system libraries missing: {e}") from e
 
     return HTML(string=html_str).write_pdf()
