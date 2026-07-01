@@ -2,6 +2,7 @@
 # Railway (nixpacks) installs these before pip dependencies
 [phases.setup]
 nixPkgs = [
+  "python3",
   "pango",
   "cairo",
   "gdk-pixbuf",
