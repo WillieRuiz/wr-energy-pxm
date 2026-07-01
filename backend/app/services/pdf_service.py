@@ -229,8 +229,8 @@ body {
         <div class="system-name">{{ sistema_recomendado }}</div>
       </div>
       <div>
-        <div class="price-tag">Precio referencial</div>
-        <div class="price-value">${{ "{:,.0f}".format(costo_total) }} USD</div>
+        <div class="price-tag">Precio de contado c/IVA</div>
+        <div class="price-value">${{ "{:,.0f}".format(precio_contado_mxn) }} MXN</div>
       </div>
     </div>
   </div>
@@ -275,7 +275,7 @@ def generate_proposal_pdf(lead, fecha: datetime, lead_id: str) -> bytes:
         capacidad_kwh=lead.capacidad_necesaria_kwh,
         horas_respaldo=lead.horas_respaldo,
         sistema_recomendado=lead.sistema_recomendado,
-        costo_total=lead.costo_total,
+        precio_contado_mxn=lead.precio_contado_mxn or 0,
     )
 
     try:
