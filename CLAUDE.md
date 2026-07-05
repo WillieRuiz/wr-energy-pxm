@@ -23,9 +23,11 @@ cp .env.example .env            # fill in values
 uvicorn app.main:app --reload --port 8000
 ```
 
-Required `.env` keys: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `FRONTEND_URL`, `WHATSAPP_NUMBER`, `PORT`, `ENVIRONMENT`
+Required `.env` keys: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `FRONTEND_URL`, `WHATSAPP_NUMBER`, `PORT`, `ENVIRONMENT`. Also `GOOGLE_DRIVE_FOLDER_ID` (not in `.env.example` yet) — required for PDF proposal upload; if unset, lead saving still succeeds but `proposal_url` comes back empty (see PDF/Drive section below).
 
-For local dev, `GOOGLE_SERVICE_ACCOUNT_JSON` can be a file path (`./credentials/service_account.json`). In Railway production it holds the raw JSON string.
+For local dev, `GOOGLE_SERVICE_ACCOUNT_JSON` can be a file path (`./credentials/service_account.json`). In Railway production it holds the raw JSON string. The service account needs the target Drive folder shared with it as Editor (Drive scope is `drive.file`, so it can only touch files it created).
+
+WeasyPrint (PDF generation) needs system libraries (Pango/Cairo/GDK-PixBuf) beyond `pip install` — see WeasyPrint's install docs for your OS if `POST /save-lead` raises `RuntimeError: WeasyPrint system libraries missing`.
 
 ### Frontend
 ```bash
@@ -37,7 +39,9 @@ npm run build
 npm run preview
 ```
 
-Required `.env` keys: `VITE_DEFAULT_LANG`, `VITE_WHATSAPP_NUMBER`. In dev, leave `VITE_API_URL` empty — Vite proxies all API calls (`/get-*`, `/save-*`, `/recommend`, `/health`, `/debug/*`) to `localhost:8000`, so there's no CORS issue. In prod, set `VITE_API_URL` to the Railway backend URL.
+No test or lint script is configured (`package.json` only has `dev`/`build`/`preview`).
+
+Required `.env` keys: `VITE_DEFAULT_LANG`, `VITE_WHATSAPP_NUMBER`, `VITE_CALENDLY_URL` (used by the "call" A/B group — see below). In dev, leave `VITE_API_URL` empty — Vite proxies all API calls (`/get-*`, `/save-*`, `/recommend`, `/health`, `/debug/*`) to `localhost:8000`, so there's no CORS issue. In prod, set `VITE_API_URL` to the Railway backend URL.
 
 ---
 
@@ -52,7 +56,15 @@ Screen0_Landing → Screen1_LeadCapture → Screen2_Equipment → Screen3_Result
 - **Screen0**: Landing page. CTA navigates to Screen1 (not WhatsApp).
 - **Screen1** (`Screen1_LeadCapture.jsx`): Checkbox list of all cargas from `/get-equipment`. Checking an item shows a +/- counter (default 1). "Añadir" calls `POST /recommend` server-side and stores results in context, then transitions to Screen2.
 - **Screen2** (`Screen2_Equipment.jsx`): Shows system recommendation (Ecoflow; Victron is always a placeholder in MVP) with MXN pricing (contado, anticipo/saldo 60/40, MSI monthly). Backup-hours slider debounces a new `POST /recommend` call. A sticky "Continuar" button (`sticky top-14`) sits above the editable equipment list. Changes in the lower list also trigger recalculation.
-- **Screen3** (`Screen3_Results.jsx`): Contact form (nombre, WhatsApp, email — lead captured here, not at the start). On submit → `POST /save-lead` → confirmation screen with optional WhatsApp button.
+- **Screen3** (`Screen3_Results.jsx`): Contact form (nombre, WhatsApp, email — lead captured here, not at the start). On submit → `POST /save-lead` → confirmation screen with either a WhatsApp button or a Calendly button, depending on the A/B group (see below).
+
+### A/B test: WhatsApp vs. Calendly call
+
+`CalculatorContext` assigns each session an `abTestGroup` (`'pdf'` or `'call'`, 50/50 via `Math.random()`, fixed for the session). On the Screen3 confirmation view, the `'call'` group sees a Calendly button (`VITE_CALENDLY_URL`) instead of the WhatsApp button. `ab_test_group` is sent to `POST /save-lead` and logged to the `leads` sheet. Despite the `'pdf'` name, PDF proposal generation (below) runs for every lead regardless of group — the group only controls the Screen3 CTA.
+
+### Analytics (`src/utils/analytics.js`)
+
+`trackEvent(name, params)` forwards to `window.gtag` (GA4) if present, else no-ops. Events fired: `screen_view` (each screen), `cta_click` (landing), `ab_test_assigned`, `lead_form_submit`, `whatsapp_click_results`, `calendly_click_results`. No GA snippet/tag ID is wired into the codebase itself — `gtag` must be injected separately (e.g. via a `<script>` tag or GTM).
 
 ### State management
 
@@ -100,9 +112,21 @@ CORS restricted to `FRONTEND_URL`. Four routers:
 | `GET /get-equipment` | `routes/equipment.py` | Reads `cargas` Sheet tab |
 | `GET /get-systems` | `routes/systems.py` | Joins `catalogo` + `specs_estaciones` |
 | `POST /recommend` | `routes/recommend.py` | Runs recommendation engine server-side |
-| `POST /save-lead` | `routes/leads.py` | Writes to `leads` + `equipos_lead` tabs |
+| `POST /save-lead` | `routes/leads.py` | Generates PDF proposal, uploads to Drive, writes to `leads` + `equipos_lead` tabs |
 
 Debug-only endpoints (prefix `/debug/`) exist for inspecting raw Sheet tabs and headers — these are temporary and can be removed.
+
+### PDF proposal + Drive upload (`save-lead` flow)
+
+`POST /save-lead` (`routes/leads.py`) does three things per lead, in order:
+
+1. Generates a Spanish-language PDF proposal via `pdf_service.generate_proposal_pdf(lead, fecha, lead_id)` — renders a hardcoded Jinja2 HTML template (brand colors/fonts independent of the frontend Tailwind tokens) and rasterizes it with WeasyPrint.
+2. Uploads the PDF via `drive_service.upload_pdf(pdf_bytes, filename, GOOGLE_DRIVE_FOLDER_ID)`, sets it publicly link-viewable, and returns the `webViewLink`.
+3. Writes the lead to Sheets, including the resulting `proposal_url` (empty string if steps 1–2 failed).
+
+Steps 1–2 are wrapped in a try/except that only logs on failure — **a PDF/Drive error never blocks the lead from being saved**. `lead_id` is an 8-char uppercase hex slug (`uuid.uuid4().hex[:8].upper()`) used as the Sheets row key and the PDF filename.
+
+`leads` sheet column order (must match the sheet header row exactly): `fecha, nombre, whatsapp, email, demanda_kw, capacidad_kwh, horas_respaldo, sistema_recomendado, precio_contado_mxn, precio_msi_mxn, origen, equipos_resumen, lead_id, proposal_url, ab_test_group`.
 
 ### Google Sheets as database (`app/services/sheets_service.py`)
 
