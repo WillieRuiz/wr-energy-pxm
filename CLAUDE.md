@@ -23,9 +23,9 @@ cp .env.example .env            # fill in values
 uvicorn app.main:app --reload --port 8000
 ```
 
-Required `.env` keys: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `FRONTEND_URL`, `WHATSAPP_NUMBER`, `PORT`, `ENVIRONMENT`. Also `GOOGLE_DRIVE_FOLDER_ID` (not in `.env.example` yet) — required for PDF proposal upload; if unset, lead saving still succeeds but `proposal_url` comes back empty (see PDF/Drive section below).
+Required `.env` keys: `GOOGLE_SHEETS_ID`, `GOOGLE_SERVICE_ACCOUNT_JSON`, `GOOGLE_STORAGE_BUCKET`, `FRONTEND_URL`, `WHATSAPP_NUMBER`, `PORT`, `ENVIRONMENT`. `GOOGLE_STORAGE_BUCKET` is required for PDF proposal upload; if unset, lead saving still succeeds but `proposal_url` comes back empty (see PDF/GCS section below).
 
-For local dev, `GOOGLE_SERVICE_ACCOUNT_JSON` can be a file path (`./credentials/service_account.json`). In Railway production it holds the raw JSON string. The service account needs the target Drive folder shared with it as Editor (Drive scope is `drive.file`, so it can only touch files it created).
+For local dev, `GOOGLE_SERVICE_ACCOUNT_JSON` can be a file path (`./credentials/service_account.json`). In Railway production it holds the raw JSON string. The GCS bucket needs `allUsers:objectViewer` at the IAM level for public read access to proposal PDFs.
 
 WeasyPrint (PDF generation) needs system libraries (Pango/Cairo/GDK-PixBuf) beyond `pip install` — see WeasyPrint's install docs for your OS if `POST /save-lead` raises `RuntimeError: WeasyPrint system libraries missing`.
 
@@ -62,9 +62,18 @@ Screen0_Landing → Screen1_LeadCapture → Screen2_Equipment → Screen3_Result
 
 `CalculatorContext` assigns each session an `abTestGroup` (`'pdf'` or `'call'`, 50/50 via `Math.random()`, fixed for the session). On the Screen3 confirmation view, the `'call'` group sees a Calendly button (`VITE_CALENDLY_URL`) instead of the WhatsApp button. `ab_test_group` is sent to `POST /save-lead` and logged to the `leads` sheet. Despite the `'pdf'` name, PDF proposal generation (below) runs for every lead regardless of group — the group only controls the Screen3 CTA.
 
+### Entry point and Meta Ads placement tracking
+
+`CalculatorContext` reads two query params once at mount (via `useState(() => ...)` initializers, so they're fixed for the session):
+
+- `entryPoint` — from `?entrada=directa`; `'directa'` skips straight to Screen1 (`currentScreen` initializes to `1` instead of `0`), anything else is `'landing'`.
+- `adPlacement` — from `?utm_content`, meant to carry Meta Ads' dynamic `{{placement}}` token (e.g. `facebook_reels`, `instagram_feed`); defaults to `'sin_dato'` for organic/direct traffic.
+
+Both read via plain `URLSearchParams(window.location.search)`, not react-router. `adPlacement` is threaded into `trackEvent` calls (`funnel_entry`, `cta_click`, `lead_form_submit`, `whatsapp_click_results`) so Meta Ads placement performance can be sliced in analytics; add it to any new funnel-tracking call the same way.
+
 ### Analytics (`src/utils/analytics.js`)
 
-`trackEvent(name, params)` forwards to `window.gtag` (GA4) if present, else no-ops. Events fired: `screen_view` (each screen), `cta_click` (landing), `ab_test_assigned`, `lead_form_submit`, `whatsapp_click_results`, `calendly_click_results`. No GA snippet/tag ID is wired into the codebase itself — `gtag` must be injected separately (e.g. via a `<script>` tag or GTM).
+`trackEvent(name, params)` forwards to `window.gtag` (GA4) if present, else no-ops. Events fired: `funnel_entry` (mount, `{tipo, placement}`), `screen_view` (each screen), `cta_click` (landing, `{tipo, placement}`), `ab_test_assigned`, `lead_form_submit` (`{placement}`), `whatsapp_click_results` (`{placement}`), `calendly_click_results`. No GA snippet/tag ID is wired into the codebase itself — `gtag` must be injected separately (e.g. via a `<script>` tag or GTM).
 
 ### State management
 
@@ -82,6 +91,8 @@ All shared state lives in `src/context/CalculatorContext.jsx` via `CalculatorPro
 | `lead` | object | `{nombre, whatsapp, email}` captured at Screen3 |
 | `currentScreen` | number | 0–3 |
 | `goToScreen(n)` | fn | Navigate |
+| `entryPoint` | `'landing'` \| `'directa'` | From `?entrada`, read once at mount |
+| `adPlacement` | string | From `?utm_content` (Meta Ads placement), read once at mount, default `'sin_dato'` |
 
 `CalculatorContext` fetches only `/get-equipment` on mount. Systems data is not pre-fetched; it is computed on demand by the backend `/recommend` endpoint.
 
@@ -112,19 +123,19 @@ CORS restricted to `FRONTEND_URL`. Four routers:
 | `GET /get-equipment` | `routes/equipment.py` | Reads `cargas` Sheet tab |
 | `GET /get-systems` | `routes/systems.py` | Joins `catalogo` + `specs_estaciones` |
 | `POST /recommend` | `routes/recommend.py` | Runs recommendation engine server-side |
-| `POST /save-lead` | `routes/leads.py` | Generates PDF proposal, uploads to Drive, writes to `leads` + `equipos_lead` tabs |
+| `POST /save-lead` | `routes/leads.py` | Generates PDF proposal, uploads to GCS, writes to `leads` + `equipos_lead` tabs |
 
 Debug-only endpoints (prefix `/debug/`) exist for inspecting raw Sheet tabs and headers — these are temporary and can be removed.
 
-### PDF proposal + Drive upload (`save-lead` flow)
+### PDF proposal + GCS upload (`save-lead` flow)
 
 `POST /save-lead` (`routes/leads.py`) does three things per lead, in order:
 
-1. Generates a Spanish-language PDF proposal via `pdf_service.generate_proposal_pdf(lead, fecha, lead_id)` — renders a hardcoded Jinja2 HTML template (brand colors/fonts independent of the frontend Tailwind tokens) and rasterizes it with WeasyPrint.
-2. Uploads the PDF via `drive_service.upload_pdf(pdf_bytes, filename, GOOGLE_DRIVE_FOLDER_ID)`, sets it publicly link-viewable, and returns the `webViewLink`.
+1. Generates a PDF proposal via `pdf_service.generate_proposal_pdf(lead, fecha, lead_id)` — renders a hardcoded Jinja2 HTML template (brand colors/fonts independent of the frontend Tailwind tokens) and rasterizes it with WeasyPrint. Rendered in the submitting user's UI language (`lead.language`, `"es"` or `"en"`, defaults to `"es"`); shows the MXN contado price (with IVA) rather than the USD system cost.
+2. Uploads the PDF via `storage_service.upload_pdf(pdf_bytes, filename, GOOGLE_STORAGE_BUCKET)` to a GCS bucket and returns the public `https://storage.googleapis.com/...` URL (public access comes from bucket-level IAM, not a per-object permission call).
 3. Writes the lead to Sheets, including the resulting `proposal_url` (empty string if steps 1–2 failed).
 
-Steps 1–2 are wrapped in a try/except that only logs on failure — **a PDF/Drive error never blocks the lead from being saved**. `lead_id` is an 8-char uppercase hex slug (`uuid.uuid4().hex[:8].upper()`) used as the Sheets row key and the PDF filename.
+Steps 1–2 are wrapped in a try/except that only logs on failure — **a PDF/GCS error never blocks the lead from being saved**. `lead_id` is an 8-char uppercase hex slug (`uuid.uuid4().hex[:8].upper()`) used as the Sheets row key and the PDF filename. `drive_service.py` (the old Google Drive uploader) is no longer imported anywhere — dead code slated for removal.
 
 `leads` sheet column order (must match the sheet header row exactly): `fecha, nombre, whatsapp, email, demanda_kw, capacidad_kwh, horas_respaldo, sistema_recomendado, precio_contado_mxn, precio_msi_mxn, origen, equipos_resumen, lead_id, proposal_url, ab_test_group`.
 
