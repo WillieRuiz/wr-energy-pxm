@@ -26,7 +26,7 @@ function validate(form, t) {
 
 export default function Screen3_Contact() {
   const { t, i18n } = useTranslation()
-  const { results, getSelectedRows, hoursBackup, abTestGroup } = useCalculator()
+  const { results, getSelectedRows, hoursBackup, abTestGroup, adPlacement } = useCalculator()
 
   useEffect(() => {
     trackEvent('screen_view', { pantalla: 'results' })
@@ -46,7 +46,7 @@ export default function Screen3_Contact() {
 
   const handleSubmit = async () => {
     if (!isValid) return
-    trackEvent('lead_form_submit')
+    trackEvent('lead_form_submit', { placement: adPlacement })
     setLoading(true)
     const { requirements, recommendations } = results || {}
     const { ecoflow, enphase } = recommendations || {}
@@ -112,7 +112,7 @@ export default function Screen3_Contact() {
         ) : (
           <Button
             onClick={() => {
-              trackEvent('whatsapp_click_results')
+              trackEvent('whatsapp_click_results', { placement: adPlacement })
               window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
             }}
             className="w-full text-base py-4"

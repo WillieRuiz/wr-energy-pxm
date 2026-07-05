@@ -31,7 +31,7 @@ const STATS = [
 ]
 
 export default function Screen0_Landing() {
-  const { goToScreen } = useCalculator()
+  const { goToScreen, adPlacement } = useCalculator()
   const [pulsed, setPulsed] = useState(false)
 
   useEffect(() => {
@@ -43,12 +43,12 @@ export default function Screen0_Landing() {
   }, [])
 
   const handleCalcCTA = () => {
-    trackEvent('cta_click', { tipo: 'calculadora_landing' })
+    trackEvent('cta_click', { tipo: 'calculadora_landing', placement: adPlacement })
     goToScreen(1)
   }
 
   const handleWA = () => {
-    trackEvent('cta_click', { tipo: 'whatsapp_landing' })
+    trackEvent('cta_click', { tipo: 'whatsapp_landing', placement: adPlacement })
   }
 
   return (

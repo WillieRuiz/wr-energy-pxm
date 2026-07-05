@@ -1,17 +1,37 @@
 import { createContext, useState, useEffect, useCallback } from 'react'
 import { getEquipment } from '../services/api.js'
+import { trackEvent } from '../utils/analytics.js'
 
 export const CalculatorContext = createContext(null)
+
+// Query param ?entrada=directa skips the landing screen (e.g. Meta Ads deep link)
+function getEntryPointFromURL() {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('entrada') === 'directa' ? 'directa' : 'landing'
+}
+
+// Meta Ads dynamic param utm_content={{placement}} → "facebook_reels", "instagram_feed", etc.
+function getAdPlacementFromURL() {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('utm_content') || 'sin_dato'
+}
 
 export function CalculatorProvider({ children }) {
   const [selections, setSelections] = useState({}) // { [equipo]: cantidad }
   const [hoursBackup, setHoursBackup] = useState(4)
   const [results, setResults] = useState(null)
   const [equipmentCatalog, setEquipmentCatalog] = useState([])
-  const [currentScreen, setCurrentScreen] = useState(0)
+  // Assigned once at session start; stays fixed for the lifetime of the provider
+  const [entryPoint] = useState(() => getEntryPointFromURL())
+  const [adPlacement] = useState(() => getAdPlacementFromURL())
+  const [currentScreen, setCurrentScreen] = useState(() => (getEntryPointFromURL() === 'directa' ? 1 : 0))
   const [lead, setLead] = useState({ nombre: '', whatsapp: '', email: '' })
   // Assigned once at session start; stays fixed for the lifetime of the provider
   const [abTestGroup] = useState(() => (Math.random() < 0.5 ? 'pdf' : 'call'))
+
+  useEffect(() => {
+    trackEvent('funnel_entry', { tipo: entryPoint, placement: adPlacement })
+  }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
   useEffect(() => {
     getEquipment()
@@ -64,6 +84,8 @@ export function CalculatorProvider({ children }) {
         lead,
         setLead,
         abTestGroup,
+        entryPoint,
+        adPlacement,
       }}
     >
       {children}
