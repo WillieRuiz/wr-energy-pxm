@@ -2,6 +2,7 @@ import { useState, useEffect } from 'react'
 import './Screen0_Landing.css'
 import { useCalculator } from '../../hooks/useCalculator.js'
 import { trackEvent } from '../../utils/analytics.js'
+import { trackPixelCustom } from '../../utils/pixelEvents.js'
 
 const WHATSAPP_NUMBER = import.meta.env.VITE_WHATSAPP_NUMBER || ''
 const WHATSAPP_MESSAGE = 'Hola, me interesa instalar un sistema de respaldo en mi casa, ¿me pueden dar más información?'
@@ -44,11 +45,13 @@ export default function Screen0_Landing() {
 
   const handleCalcCTA = () => {
     trackEvent('cta_click', { tipo: 'calculadora_landing', placement: adPlacement })
+    trackPixelCustom('CTAClick', { tipo: 'calculadora_landing' })
     goToScreen(1)
   }
 
   const handleWA = () => {
     trackEvent('cta_click', { tipo: 'whatsapp_landing', placement: adPlacement })
+    trackPixelCustom('CTAClick', { tipo: 'whatsapp_landing' })
   }
 
   return (

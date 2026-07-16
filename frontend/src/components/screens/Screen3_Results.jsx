@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { trackEvent } from '../../utils/analytics.js'
+import { trackPixelViewContent, trackPixelLead, trackPixelContact } from '../../utils/pixelEvents.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
 import Input from '../ui/Input.jsx'
 import Button from '../ui/Button.jsx'
@@ -30,6 +31,7 @@ export default function Screen3_Contact() {
 
   useEffect(() => {
     trackEvent('screen_view', { pantalla: 'results' })
+    trackPixelViewContent('results')
     trackEvent('ab_test_assigned', { group: abTestGroup })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 
@@ -47,6 +49,7 @@ export default function Screen3_Contact() {
   const handleSubmit = async () => {
     if (!isValid) return
     trackEvent('lead_form_submit', { placement: adPlacement })
+    trackPixelLead()
     setLoading(true)
     const { requirements, recommendations } = results || {}
     const { ecoflow, enphase } = recommendations || {}
@@ -103,6 +106,7 @@ export default function Screen3_Contact() {
           <Button
             onClick={() => {
               trackEvent('calendly_click_results')
+              trackPixelContact('calendly')
               window.open(CALENDLY_URL, '_blank')
             }}
             className="w-full text-base py-4"
@@ -113,6 +117,7 @@ export default function Screen3_Contact() {
           <Button
             onClick={() => {
               trackEvent('whatsapp_click_results', { placement: adPlacement })
+              trackPixelContact('whatsapp')
               window.open(buildWhatsAppUrl(results, i18n.language), '_blank')
             }}
             className="w-full text-base py-4"

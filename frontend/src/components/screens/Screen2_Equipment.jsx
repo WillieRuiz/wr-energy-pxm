@@ -1,6 +1,7 @@
 import { useRef, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { trackEvent } from '../../utils/analytics.js'
+import { trackPixelViewContent } from '../../utils/pixelEvents.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
 import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
@@ -98,6 +99,7 @@ export default function Screen2_Recommendation() {
 
   useEffect(() => {
     trackEvent('screen_view', { pantalla: 'equipment' })
+    trackPixelViewContent('equipment')
   }, [])
 
   // Debounced recalculate — skips first render (results already set by Screen1)
