@@ -3,7 +3,10 @@
 // mapeados a eventos estándar de Meta cuando aplica, para poder usarlos
 // como objetivo de optimización al crear campañas en Ads Manager.
 
+import { shouldTrack } from './botFilter.js'
+
 function fbqSafe(...args) {
+  if (!shouldTrack()) return
   if (typeof window.fbq === 'function') {
     window.fbq(...args)
   }
