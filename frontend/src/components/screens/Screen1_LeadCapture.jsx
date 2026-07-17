@@ -23,7 +23,7 @@ export default function Screen1_Equipment() {
   const selectedCount = Object.keys(selections).length
 
   useEffect(() => {
-    trackEvent('screen_view', { pantalla: 'lead_capture' })
+    trackEvent('screen_view', { pantalla: 'seleccion_equipos' })
   }, [])
 
   const handleAdd = async () => {

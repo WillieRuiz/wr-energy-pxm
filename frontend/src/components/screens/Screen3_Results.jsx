@@ -30,8 +30,8 @@ export default function Screen3_Contact() {
   const { results, getSelectedRows, hoursBackup, abTestGroup, adPlacement } = useCalculator()
 
   useEffect(() => {
-    trackEvent('screen_view', { pantalla: 'results' })
-    trackPixelViewContent('results')
+    trackEvent('screen_view', { pantalla: 'datos_contacto' })
+    trackPixelViewContent('datos_contacto')
     trackEvent('ab_test_assigned', { group: abTestGroup })
   }, []) // eslint-disable-line react-hooks/exhaustive-deps
 

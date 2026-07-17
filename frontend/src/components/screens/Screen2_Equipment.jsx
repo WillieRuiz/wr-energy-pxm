@@ -98,8 +98,8 @@ export default function Screen2_Recommendation() {
   } = useCalculator()
 
   useEffect(() => {
-    trackEvent('screen_view', { pantalla: 'equipment' })
-    trackPixelViewContent('equipment')
+    trackEvent('screen_view', { pantalla: 'sistema_propuesto' })
+    trackPixelViewContent('sistema_propuesto')
   }, [])
 
   // Debounced recalculate — skips first render (results already set by Screen1)
