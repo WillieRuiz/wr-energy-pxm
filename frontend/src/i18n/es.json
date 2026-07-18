@@ -4,7 +4,8 @@
     "subtitle": "Marca lo que quieres respaldar y cuántos tienes.",
     "add_button": "Añadir equipos",
     "none_selected": "Ningún equipo seleccionado",
-    "loading": "Cargando equipos..."
+    "loading": "Cargando equipos...",
+    "contact_prompt": "Ingresa tus datos para ver la lista de equipos"
   },
   "screen2": {
     "title": "Tu sistema recomendado",
@@ -17,29 +18,41 @@
     "anticipo_label": "Anticipo (60%)",
     "saldo_label": "Saldo (40%)",
     "msi_label": "Diferido 12 MSI",
-    "continue_button": "Continuar",
     "custom_quote": "Tu necesidad excede nuestro catálogo estándar. Te prepararemos una cotización a medida.",
     "victron_placeholder": "Cotización personalizada — habla con nosotros.",
     "edit_title": "Aún no es demasiado tarde",
     "edit_subtitle": "Añade o quita equipos de tu lista para recalcular.",
     "disclaimer": "Precios estimados con IVA. El costo final varía según la instalación. Tipo de cambio referencial.",
-    "loading": "Calculando..."
+    "loading": "Calculando...",
+    "product_photo_placeholder": "Fotos de producto próximamente",
+    "gallery_title": "Así se ve instalado",
+    "how_it_works_title": "¿Cómo funciona tu respaldo?",
+    "step_1": "Se va la luz",
+    "step_2": "El sistema detecta el corte en milisegundos",
+    "step_3": "Las baterías toman la carga automáticamente",
+    "step_4": "Tus equipos siguen encendidos, sin que te enteres",
+    "table_title": "Tu sistema vs. lo que necesitas",
+    "table_col_system": "Sistema",
+    "table_col_needed": "Necesitas",
+    "table_row_capacity": "Capacidad",
+    "table_row_power": "Potencia",
+    "msi_badge": "Más popular",
+    "pay_now_button": "Pagar ahora",
+    "contact_willie_button": "Contactar a Willie"
   },
   "screen3": {
-    "title": "¿A dónde te enviamos tu propuesta?",
-    "subtitle": "Te la mandamos por WhatsApp en minutos.",
     "name_label": "Nombre",
     "whatsapp_label": "WhatsApp",
-    "email_label": "Email (opcional)",
-    "submit_button": "Enviar",
-    "privacy": "Solo usaremos tus datos para contactarte.",
     "error_nombre": "El nombre debe tener al menos 2 caracteres.",
     "error_whatsapp": "Ingresa un número de teléfono válido.",
-    "error_email": "Ingresa un correo electrónico válido.",
     "success_title": "¡Listo!",
     "success_body": "Recibimos tu solicitud. Estamos preparando tu propuesta y te contactamos pronto.",
     "whatsapp_button": "Abrir WhatsApp",
     "success_body_call": "Recibimos tu solicitud. Agenda una llamada y te explicamos tu propuesta en detalle.",
     "calendly_button": "Agendar llamada →"
+  },
+  "screen4": {
+    "title": "¡Gracias!",
+    "body": "Willie se pondrá en contacto contigo a la brevedad."
   }
 }

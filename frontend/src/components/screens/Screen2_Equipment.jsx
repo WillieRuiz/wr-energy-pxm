@@ -3,84 +3,9 @@ import { useTranslation } from 'react-i18next'
 import { trackEvent } from '../../utils/analytics.js'
 import { trackPixelViewContent } from '../../utils/pixelEvents.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
-import Button from '../ui/Button.jsx'
+import SystemCard from '../ui/SystemCard.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
 import { recommend } from '../../services/api.js'
-import { calcPricing } from '../../utils/pricing.js'
-
-function fmt(n) {
-  return Math.round(n).toLocaleString('es-MX')
-}
-
-function PricingBlock({ system, totalDemandW, t }) {
-  if (!system) return null
-  if (system.needs_custom_quote) {
-    return (
-      <p className="font-body text-sm text-yellow-700 bg-yellow-50 border border-yellow-200 rounded-xl p-3">
-        {t('screen2.custom_quote')}
-      </p>
-    )
-  }
-  const { contado, anticipo, saldo, mensualidad } = calcPricing(system.usd_precio, totalDemandW)
-  return (
-    <div className="space-y-3">
-      <div className="flex items-baseline justify-between">
-        <span className="font-body text-sm text-gray-500">{t('screen2.contado_label')}</span>
-        <span className="font-mono font-medium text-lg text-carbon">${fmt(contado)} MXN</span>
-      </div>
-      <div className="pl-3 border-l-2 border-gray-100 space-y-1 text-sm font-body text-gray-500">
-        <div className="flex justify-between">
-          <span>{t('screen2.anticipo_label')}</span>
-          <span className="font-mono">${fmt(anticipo)}</span>
-        </div>
-        <div className="flex justify-between">
-          <span>{t('screen2.saldo_label')}</span>
-          <span className="font-mono">${fmt(saldo)}</span>
-        </div>
-      </div>
-      <div className="flex items-baseline justify-between pt-1 border-t border-gray-100">
-        <span className="font-body text-sm text-gray-500">{t('screen2.msi_label')}</span>
-        <span className="font-mono font-medium text-carbon">
-          ${fmt(mensualidad)}<span className="text-xs text-gray-400">/mes</span>
-        </span>
-      </div>
-    </div>
-  )
-}
-
-function SystemBlock({ system, brand, totalDemandW, t }) {
-  if (brand === 'victron') {
-    return (
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm p-5">
-        <h3 className="font-display font-bold text-azul-tormenta text-lg mb-1">Victron + Pytes</h3>
-        <p className="font-body text-sm text-gray-400">{t('screen2.victron_placeholder')}</p>
-      </div>
-    )
-  }
-  if (!system) return null
-  return (
-    <div className={`bg-white rounded-2xl shadow-sm p-5 border-2 ${!system.needs_custom_quote ? 'border-amarillo-solar' : 'border-gray-100'}`}>
-      <div className="flex items-start justify-between mb-3">
-        <h3 className="font-display font-bold text-azul-tormenta text-lg leading-tight">
-          {system.sistema}
-        </h3>
-        {!system.needs_custom_quote && (
-          <span className="ml-2 shrink-0 bg-amarillo-solar text-carbon text-xs font-display font-bold px-2 py-0.5 rounded uppercase tracking-wide">
-            {t('screen2.recommended')}
-          </span>
-        )}
-      </div>
-      <div className="flex gap-3 text-xs font-mono text-gray-400 mb-4">
-        <span>{system.almacenamiento} kWh</span>
-        <span>{system.potencia} kW</span>
-        {system.acepta_smart_panel && (
-          <span className="text-azul-tormenta">+ Smart Panel disponible</span>
-        )}
-      </div>
-      <PricingBlock system={system} totalDemandW={totalDemandW} t={t} />
-    </div>
-  )
-}
 
 export default function Screen2_Recommendation() {
   const { t } = useTranslation()
@@ -94,7 +19,6 @@ export default function Screen2_Recommendation() {
     toggleItem,
     setItemQty,
     getSelectedRows,
-    goToScreen,
   } = useCalculator()
 
   useEffect(() => {
@@ -178,18 +102,10 @@ export default function Screen2_Recommendation() {
 
       {/* System recommendation */}
       <div className="space-y-3 mb-4">
-        <SystemBlock system={ecoflow} brand="ecoflow" totalDemandW={requirements.totalDemandW} t={t} />
-        <SystemBlock brand="victron" t={t} />
+        <SystemCard system={ecoflow} brand="ecoflow" totalDemandW={requirements.totalDemandW} />
       </div>
 
       <p className="text-xs font-body text-gray-400 mb-4">{t('screen2.disclaimer')}</p>
-
-      {/* Sticky "Continuar" */}
-      <div className="sticky top-14 z-10 -mx-4 px-4 py-3 bg-white border-y border-gray-100 shadow-sm mb-6">
-        <Button onClick={() => goToScreen(3)} className="w-full text-base py-3">
-          {t('screen2.continue_button')} →
-        </Button>
-      </div>
 
       {/* Editable equipment list */}
       <div className="mb-8">

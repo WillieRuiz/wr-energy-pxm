@@ -4,7 +4,8 @@
     "subtitle": "Check what you want to back up and how many you have.",
     "add_button": "Add appliances",
     "none_selected": "No appliances selected",
-    "loading": "Loading appliances..."
+    "loading": "Loading appliances...",
+    "contact_prompt": "Enter your info to see the appliance list"
   },
   "screen2": {
     "title": "Your recommended system",
@@ -17,29 +18,41 @@
     "anticipo_label": "Upfront (60%)",
     "saldo_label": "Balance (40%)",
     "msi_label": "12-month financing",
-    "continue_button": "Continue",
     "custom_quote": "Your needs exceed our standard catalog. We will prepare a custom quote for you.",
     "victron_placeholder": "Custom quote — talk to us.",
     "edit_title": "Not too late to adjust",
     "edit_subtitle": "Add or remove appliances to recalculate.",
     "disclaimer": "Estimated prices with tax included. Final cost varies by installation. Reference exchange rate.",
-    "loading": "Calculating..."
+    "loading": "Calculating...",
+    "product_photo_placeholder": "Product photos coming soon",
+    "gallery_title": "What it looks like installed",
+    "how_it_works_title": "How does your backup work?",
+    "step_1": "The power goes out",
+    "step_2": "The system detects the outage in milliseconds",
+    "step_3": "The batteries pick up the load automatically",
+    "step_4": "Your appliances stay on, without you noticing",
+    "table_title": "Your system vs. what you need",
+    "table_col_system": "System",
+    "table_col_needed": "You need",
+    "table_row_capacity": "Capacity",
+    "table_row_power": "Power",
+    "msi_badge": "Most popular",
+    "pay_now_button": "Pay now",
+    "contact_willie_button": "Contact Willie"
   },
   "screen3": {
-    "title": "Where should we send your proposal?",
-    "subtitle": "We'll send it to your WhatsApp in minutes.",
     "name_label": "Name",
     "whatsapp_label": "WhatsApp",
-    "email_label": "Email (optional)",
-    "submit_button": "Send",
-    "privacy": "We'll only use your info to contact you.",
     "error_nombre": "Name must be at least 2 characters.",
     "error_whatsapp": "Enter a valid phone number.",
-    "error_email": "Enter a valid email address.",
     "success_title": "Done!",
     "success_body": "We received your request. We're preparing your proposal and will be in touch soon.",
     "whatsapp_button": "Open WhatsApp",
     "success_body_call": "We received your request. Schedule a call and we'll walk you through your proposal.",
     "calendly_button": "Schedule a call →"
+  },
+  "screen4": {
+    "title": "Thank you!",
+    "body": "Willie will get in touch with you shortly."
   }
 }

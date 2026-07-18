@@ -63,6 +63,7 @@ def _fit_batteries(station: dict, e_kwh: float, needs_custom_quote: bool = False
 
     return {
         "sistema": _system_name(station, n),
+        "codigo_estacion": station["codigo"],
         "marca": station["marca"],
         "almacenamiento": round(total_kwh, 2),
         "potencia": round(station["salida_continua_w"] / 1000, 2),
@@ -81,6 +82,7 @@ def _max_config(station: dict) -> dict:
     total_usd = station["precio_estacion_usd"] + max_bats * station["precio_bateria_usd"]
     return {
         "sistema": _system_name(station, max_bats),
+        "codigo_estacion": station["codigo"],
         "marca": station["marca"],
         "almacenamiento": round(cap_base + max_bats * cap_bat, 2),
         "potencia": round(station["salida_continua_w"] / 1000, 2),
@@ -102,7 +104,7 @@ def select_ecoflow(stations: list[dict], system_power_w: float, e_kwh: float) ->
     sorted_st = sorted(ecoflow, key=lambda s: s["salida_continua_w"])
 
     if not sorted_st:
-        return {"sistema": "Cotización personalizada", "marca": "Ecoflow",
+        return {"sistema": "Cotización personalizada", "codigo_estacion": None, "marca": "Ecoflow",
                 "almacenamiento": 0, "potencia": 0, "n_baterias": 0,
                 "usd_precio": 0, "needs_custom_quote": True, "acepta_smart_panel": False}
 

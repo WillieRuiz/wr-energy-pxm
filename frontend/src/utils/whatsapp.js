@@ -20,3 +20,14 @@ export function buildWhatsAppUrl(results, lang = 'es') {
 
   return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
 }
+
+// TODO MERCADO PAGO: this is a stopgap for the "Pagar ahora" CTA in Screen2 while Mercado
+// Pago isn't wired up yet — it just opens WhatsApp with a payment-intent message. Once the
+// integration is ready, the CTA should generate a real payment link instead of calling this.
+export function buildWhatsAppPaymentUrl(systemName, lang = 'es') {
+  const message =
+    lang === 'es'
+      ? `Hola, quiero pagar mi sistema ${systemName}, ¿me ayudas a completar el pago?`
+      : `Hi, I want to pay for my ${systemName} system, can you help me complete the payment?`
+  return `https://wa.me/${WHATSAPP_NUMBER}?text=${encodeURIComponent(message)}`
+}
