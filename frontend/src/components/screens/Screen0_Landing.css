@@ -213,22 +213,40 @@
 .lp-step-desc  { font-size: 13px; color: var(--lp-muted); line-height: 1.55; }
 
 /* ── PROOF ── */
-.lp-proof-box {
+.lp-credibility-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--lp-primary);
+  background: var(--lp-navy-tint);
+  border-radius: 999px;
+  padding: 0.5rem 0.9rem;
+  margin-bottom: 0.5rem;
+}
+
+.lp-proof-grid {
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;
+  margin-top: 1.5rem;
+}
+
+.lp-proof-card {
   background: var(--lp-card);
   border: 1px solid var(--lp-border);
   border-left: 3px solid var(--lp-accent);
   border-radius: 10px;
-  padding: 1.5rem;
-  margin-top: 1.5rem;
-  margin-bottom: 1.25rem;
+  padding: 1.25rem;
 }
 
 .lp-proof-text {
-  font-size: 1rem;
+  font-size: 14px;
   color: var(--lp-carbon);
-  line-height: 1.65;
+  line-height: 1.6;
   font-style: italic;
-  margin-bottom: 1rem;
+  margin-bottom: 0.75rem;
 }
 
 .lp-proof-attr { font-size: 12px; color: var(--lp-muted); font-weight: 500; }
@@ -276,6 +294,14 @@
   font-size: 11px;
   color: rgba(255,255,255,0.5);
   margin-top: 0.75rem;
+}
+
+.lp-payment-note {
+  font-size: 11px;
+  color: rgba(255,255,255,0.55);
+  line-height: 1.7;
+  max-width: 320px;
+  margin: 0 auto 0.75rem;
 }
 
 /* ── BUTTONS ── */
@@ -418,4 +444,5 @@
   .lp-hero    { padding: 5rem 2.5rem 7rem; }
   .lp-section { padding: 5rem 2.5rem; }
   .lp-pain-grid  { grid-template-columns: repeat(4, 1fr); }
+  .lp-proof-grid { grid-template-columns: repeat(3, 1fr); }
 }

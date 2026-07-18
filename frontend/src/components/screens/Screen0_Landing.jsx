@@ -31,6 +31,21 @@ const STATS = [
   { num: '0', label: 'Litros de gasolina que necesita el sistema instalado' },
 ]
 
+const TESTIMONIALS = [
+  {
+    name: 'Eduardo',
+    quote: 'Willie se tomó el tiempo de explicarme todo con calma, sin tecnicismos que no entendía. Resolvió cada duda que tuve, por básica que fuera.',
+  },
+  {
+    name: 'Alejandra',
+    quote: 'Lo que más valoro es que Willie siempre estuvo para responder mis preguntas. Se nota que sabe muchísimo del tema y lo explica de forma que cualquiera lo entiende.',
+  },
+  {
+    name: 'Pedro',
+    quote: 'Con Willie sentí que estaba en buenas manos desde el primer momento. Muy atento y paciente para explicar, no como otros que solo quieren vender.',
+  },
+]
+
 export default function Screen0_Landing() {
   const { goToScreen, adPlacement } = useCalculator()
   const [pulsed, setPulsed] = useState(false)
@@ -159,13 +174,16 @@ export default function Screen0_Landing() {
       {/* PROOF */}
       <section className="lp-section">
         <p className="lp-section-label">Lo que dicen</p>
-        <h2 className="lp-section-title">Ya no se apagan</h2>
+        <h2 className="lp-section-title">Trato cercano,<br />conocimiento real</h2>
+        <p className="lp-credibility-badge">🔧 10+ años de experiencia en sistemas de paneles solares y de almacenamiento de energía</p>
 
-        <div className="lp-proof-box">
-          <p className="lp-proof-text">
-            "Antes cuando se iba la luz lo primero que hacía era sacar la hielera para que no se echara a perder la comida. Ahora el sistema prende solo y ni me entero del apagón."
-          </p>
-          <p className="lp-proof-attr"><span>Residente</span> · Puerto Escondido, Oaxaca</p>
+        <div className="lp-proof-grid">
+          {TESTIMONIALS.map((t) => (
+            <div key={t.name} className="lp-proof-card">
+              <p className="lp-proof-text">"{t.quote}"</p>
+              <p className="lp-proof-attr"><span>{t.name}</span> · Costa de Oaxaca</p>
+            </div>
+          ))}
         </div>
       </section>
 
@@ -192,6 +210,11 @@ export default function Screen0_Landing() {
         >
           💬 Prefiero hablar por WhatsApp
         </a>
+        <p className="lp-payment-note">
+          💳 60% de anticipo + 40% contra instalación
+          <br />
+          📱 O meses sin intereses a 3, 6, 9 o 12 con Mercado Pago (sistemas portátiles)
+        </p>
         <p style={{ fontSize: '11px', color: 'rgba(255,255,255,0.45)', margin: 0 }}>
           Gratis · Sin compromiso · Puerto Escondido y alrededores
         </p>
