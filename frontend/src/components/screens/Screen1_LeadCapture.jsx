@@ -2,9 +2,11 @@ import { useState, useEffect } from 'react'
 import { useTranslation } from 'react-i18next'
 import { trackEvent } from '../../utils/analytics.js'
 import ProgressBar from '../layout/ProgressBar.jsx'
+import Input from '../ui/Input.jsx'
 import Button from '../ui/Button.jsx'
 import { useCalculator } from '../../hooks/useCalculator.js'
 import { recommend } from '../../services/api.js'
+import { validateLead } from '../../utils/validation.js'
 
 export default function Screen1_Equipment() {
   const { t } = useTranslation()
@@ -16,15 +18,24 @@ export default function Screen1_Equipment() {
     hoursBackup,
     setResults,
     goToScreen,
+    lead,
+    setLead,
   } = useCalculator()
 
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
+  const [touched, setTouched] = useState({})
   const selectedCount = Object.keys(selections).length
 
   useEffect(() => {
     trackEvent('screen_view', { pantalla: 'seleccion_equipos' })
   }, [])
+
+  const errors = validateLead(lead, t)
+  const isLeadValid = Object.keys(errors).length === 0
+
+  const handleLeadChange = (field, val) => setLead((prev) => ({ ...prev, [field]: val }))
+  const handleLeadBlur = (field) => setTouched((prev) => ({ ...prev, [field]: true }))
 
   const handleAdd = async () => {
     const equipos = equipmentCatalog
@@ -65,66 +76,94 @@ export default function Screen1_Equipment() {
       </h2>
       <p className="font-body text-gray-500 text-sm mb-4">{t('screen1.subtitle')}</p>
 
-      <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
-        {equipmentCatalog.map((item) => {
-          const isChecked = item.equipo in selections
-          const qty = selections[item.equipo] ?? 1
+      <div className="flex flex-col gap-4 mb-6">
+        <Input
+          label={`${t('screen3.name_label')} *`}
+          value={lead.nombre}
+          onChange={(e) => handleLeadChange('nombre', e.target.value)}
+          onBlur={() => handleLeadBlur('nombre')}
+          placeholder="Daniela Ramírez"
+          error={touched.nombre ? errors.nombre : undefined}
+        />
+        <Input
+          label={`${t('screen3.whatsapp_label')} *`}
+          type="tel"
+          value={lead.whatsapp}
+          onChange={(e) => handleLeadChange('whatsapp', e.target.value)}
+          onBlur={() => handleLeadBlur('whatsapp')}
+          placeholder="+52 954 123 4567"
+          error={touched.whatsapp ? errors.whatsapp : undefined}
+        />
+      </div>
 
-          return (
-            <div key={item.equipo} className="flex items-center gap-3 px-4 py-3">
-              <input
-                type="checkbox"
-                id={`chk-${item.equipo}`}
-                checked={isChecked}
-                onChange={() => toggleItem(item.equipo)}
-                className="w-5 h-5 accent-naranja-wr shrink-0 cursor-pointer"
-              />
-              <label
-                htmlFor={`chk-${item.equipo}`}
-                className="flex-1 font-body text-carbon text-sm cursor-pointer select-none"
-              >
-                {item.equipo}
-              </label>
-              <span className="font-mono text-xs text-gray-400 shrink-0">
-                {item.potencia_w.toLocaleString('en-US')} W
-              </span>
-              {isChecked && (
-                <div className="flex items-center gap-1 ml-1 shrink-0">
-                  <button
-                    onClick={() => setItemQty(item.equipo, qty - 1)}
-                    disabled={qty <= 1}
-                    className="w-7 h-7 rounded-full border border-gray-300 font-mono text-base flex items-center justify-center disabled:opacity-30 hover:bg-gray-50"
+      {!isLeadValid ? (
+        <p className="font-body text-sm text-gray-400 text-center py-8">
+          {t('screen1.contact_prompt')}
+        </p>
+      ) : (
+        <div className="animate-fade-in">
+          <div className="bg-white rounded-2xl border border-gray-100 shadow-sm divide-y divide-gray-100">
+            {equipmentCatalog.map((item) => {
+              const isChecked = item.equipo in selections
+              const qty = selections[item.equipo] ?? 1
+
+              return (
+                <div key={item.equipo} className="flex items-center gap-3 px-4 py-3">
+                  <input
+                    type="checkbox"
+                    id={`chk-${item.equipo}`}
+                    checked={isChecked}
+                    onChange={() => toggleItem(item.equipo)}
+                    className="w-5 h-5 accent-naranja-wr shrink-0 cursor-pointer"
+                  />
+                  <label
+                    htmlFor={`chk-${item.equipo}`}
+                    className="flex-1 font-body text-carbon text-sm cursor-pointer select-none"
                   >
-                    −
-                  </button>
-                  <span className="font-mono w-5 text-center text-sm font-medium">{qty}</span>
-                  <button
-                    onClick={() => setItemQty(item.equipo, qty + 1)}
-                    className="w-7 h-7 rounded-full border border-gray-300 font-mono text-base flex items-center justify-center hover:bg-gray-50"
-                  >
-                    +
-                  </button>
+                    {item.equipo}
+                  </label>
+                  <span className="font-mono text-xs text-gray-400 shrink-0">
+                    {item.potencia_w.toLocaleString('en-US')} W
+                  </span>
+                  {isChecked && (
+                    <div className="flex items-center gap-1 ml-1 shrink-0">
+                      <button
+                        onClick={() => setItemQty(item.equipo, qty - 1)}
+                        disabled={qty <= 1}
+                        className="w-7 h-7 rounded-full border border-gray-300 font-mono text-base flex items-center justify-center disabled:opacity-30 hover:bg-gray-50"
+                      >
+                        −
+                      </button>
+                      <span className="font-mono w-5 text-center text-sm font-medium">{qty}</span>
+                      <button
+                        onClick={() => setItemQty(item.equipo, qty + 1)}
+                        className="w-7 h-7 rounded-full border border-gray-300 font-mono text-base flex items-center justify-center hover:bg-gray-50"
+                      >
+                        +
+                      </button>
+                    </div>
+                  )}
                 </div>
-              )}
-            </div>
-          )
-        })}
-      </div>
+              )
+            })}
+          </div>
 
-      {error && (
-        <p className="mt-3 text-sm text-red-600 font-body text-center">{error}</p>
+          {error && (
+            <p className="mt-3 text-sm text-red-600 font-body text-center">{error}</p>
+          )}
+
+          <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between gap-4 shadow-lg">
+            <span className="font-body text-sm text-carbon">
+              {selectedCount > 0
+                ? `${selectedCount} equipo${selectedCount !== 1 ? 's' : ''} seleccionado${selectedCount !== 1 ? 's' : ''}`
+                : t('screen1.none_selected')}
+            </span>
+            <Button onClick={handleAdd} disabled={selectedCount === 0 || loading} className="shrink-0">
+              {loading ? '...' : `${t('screen1.add_button')} →`}
+            </Button>
+          </div>
+        </div>
       )}
-
-      <div className="fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 px-4 py-3 flex items-center justify-between gap-4 shadow-lg">
-        <span className="font-body text-sm text-carbon">
-          {selectedCount > 0
-            ? `${selectedCount} equipo${selectedCount !== 1 ? 's' : ''} seleccionado${selectedCount !== 1 ? 's' : ''}`
-            : t('screen1.none_selected')}
-        </span>
-        <Button onClick={handleAdd} disabled={selectedCount === 0 || loading} className="shrink-0">
-          {loading ? '...' : `${t('screen1.add_button')} →`}
-        </Button>
-      </div>
     </div>
   )
 }
