@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react'
+import { useState, useEffect, useRef } from 'react'
 import './Screen0_Landing.css'
 import { useCalculator } from '../../hooks/useCalculator.js'
 import { trackEvent } from '../../utils/analytics.js'
@@ -45,6 +45,94 @@ const TESTIMONIALS = [
     quote: 'Con Willie sentí que estaba en buenas manos desde el primer momento. Muy atento y paciente para explicar, no como otros que solo quieren vender.',
   },
 ]
+
+// NOTA: los archivos reales en public/images/estaciones/ tienen doble extensión
+// ".png.png" (no ".png") — se referencian tal cual existen en disco.
+const CAROUSEL_SLIDES = [
+  { img: '/images/estaciones/EFDeltaProUltra-US_instalado.png.png', caption: 'Delta Pro Ultra — para tu casa' },
+  { img: '/images/estaciones/EFDeltaProUltra-US_instalado_2.png.png', caption: 'Delta Pro Ultra — para tu casa' },
+  { img: '/images/estaciones/EFDeltaProUltra-US_instalado_3.png.png', caption: 'Delta Pro Ultra — para tu casa' },
+  { img: '/images/estaciones/EFDeltaProUltra-US_avanzado_instalado.png.png', caption: 'Delta Pro Ultra — para hoteles boutique y residencias grandes' },
+  { img: '/images/estaciones/DELTAPro-1600W-US_instalado.png.png', caption: 'Delta Pro — respaldo doméstico confiable' },
+  { img: '/images/estaciones/DELTAPro-1600W-US_instalado_2.png.png', caption: 'Delta Pro — respaldo doméstico confiable' },
+  { img: '/images/estaciones/DELTAPro-1600W-US_instalado_3.png.png', caption: 'Delta Pro — respaldo doméstico confiable' },
+]
+
+function Carousel({ slides }) {
+  const trackRef = useRef(null)
+  const [index, setIndex] = useState(0)
+  const [paused, setPaused] = useState(false)
+
+  const goTo = (i) => {
+    const clamped = (i + slides.length) % slides.length
+    setIndex(clamped)
+    const track = trackRef.current
+    if (track) {
+      track.scrollTo({ left: clamped * track.clientWidth, behavior: 'smooth' })
+    }
+  }
+
+  useEffect(() => {
+    if (paused) return
+    const timer = setInterval(() => goTo(index + 1), 5500)
+    return () => clearInterval(timer)
+  }, [index, paused]) // eslint-disable-line react-hooks/exhaustive-deps
+
+  const handleScroll = () => {
+    const track = trackRef.current
+    if (!track) return
+    const i = Math.round(track.scrollLeft / track.clientWidth)
+    if (i !== index) setIndex(i)
+  }
+
+  return (
+    <div
+      className="lp-carousel"
+      onMouseEnter={() => setPaused(true)}
+      onMouseLeave={() => setPaused(false)}
+      onTouchStart={() => setPaused(true)}
+      onTouchEnd={() => setPaused(false)}
+    >
+      <div className="lp-carousel-track" ref={trackRef} onScroll={handleScroll}>
+        {slides.map((s, i) => (
+          <div className="lp-carousel-slide" key={i}>
+            <img src={s.img} alt={s.caption} className="lp-carousel-img" loading="lazy" />
+            <div className="lp-carousel-caption">{s.caption}</div>
+          </div>
+        ))}
+      </div>
+
+      <button
+        type="button"
+        className="lp-carousel-arrow lp-carousel-arrow-prev"
+        onClick={() => goTo(index - 1)}
+        aria-label="Imagen anterior"
+      >
+        ‹
+      </button>
+      <button
+        type="button"
+        className="lp-carousel-arrow lp-carousel-arrow-next"
+        onClick={() => goTo(index + 1)}
+        aria-label="Siguiente imagen"
+      >
+        ›
+      </button>
+
+      <div className="lp-carousel-dots">
+        {slides.map((_, i) => (
+          <button
+            type="button"
+            key={i}
+            className={`lp-carousel-dot${i === index ? ' lp-carousel-dot-active' : ''}`}
+            onClick={() => goTo(i)}
+            aria-label={`Ir a la imagen ${i + 1}`}
+          />
+        ))}
+      </div>
+    </div>
+  )
+}
 
 export default function Screen0_Landing() {
   const { goToScreen, adPlacement } = useCalculator()
@@ -185,6 +273,13 @@ export default function Screen0_Landing() {
             </div>
           ))}
         </div>
+      </section>
+
+      {/* GALLERY */}
+      <section className="lp-section">
+        <p className="lp-section-label">Instalaciones</p>
+        <h2 className="lp-section-title">Así se ve en la costa</h2>
+        <Carousel slides={CAROUSEL_SLIDES} />
       </section>
 
       {/* FOOTER CTA */}
