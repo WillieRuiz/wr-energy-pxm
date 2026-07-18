@@ -42,6 +42,7 @@ _STRINGS = {
         "sec_system": "Sistema recomendado",
         "sys_tag": "Sistema",
         "price_tag": "Precio de contado c/IVA",
+        "pay_link_text": "→ Completa tu pago aquí",
         "disclaimer": (
             "<strong>Propuesta preliminar</strong> sujeta a visita de diagnóstico en sitio. "
             "Precio referencial con IVA incluido; el costo final puede variar según condiciones "
@@ -68,6 +69,7 @@ _STRINGS = {
         "sec_system": "Recommended System",
         "sys_tag": "System",
         "price_tag": "Cash price w/VAT",
+        "pay_link_text": "→ Complete your payment here",
         "disclaimer": (
             "<strong>Preliminary proposal</strong> subject to on-site diagnostic visit. "
             "Reference price includes VAT; final cost may vary based on installation conditions "
@@ -190,6 +192,8 @@ body {
   opacity: 0.65; margin-bottom: 4px; text-align: right;
 }
 .price-value { font-size: 22px; font-weight: 700; color: #F97316; text-align: right; }
+.pay-link-wrap { margin-top: 10px; border-top: 1px solid rgba(255,255,255,0.15); padding-top: 10px; }
+.pay-link { color: #F97316; text-decoration: underline; font-size: 12px; font-weight: 600; }
 
 /* ── Disclaimer ── */
 .disclaimer {
@@ -297,6 +301,11 @@ body {
         <div class="price-value">${{ "{:,.0f}".format(price_value) }} {{ price_currency }}</div>
       </div>
     </div>
+    {% if link_pago %}
+    <div class="pay-link-wrap">
+      <a href="{{ link_pago }}" target="_blank" class="pay-link">{{ s.pay_link_text }}</a>
+    </div>
+    {% endif %}
   </div>
 
   <!-- Disclaimer -->
@@ -315,7 +324,7 @@ body {
 </html>"""
 
 
-def generate_proposal_pdf(lead, fecha: datetime, lead_id: str) -> bytes:
+def generate_proposal_pdf(lead, fecha: datetime, lead_id: str, link_pago: str = "") -> bytes:
     """
     Renders the proposal HTML template and returns PDF bytes.
     Does not write to disk — caller is responsible for storage.
@@ -344,6 +353,7 @@ def generate_proposal_pdf(lead, fecha: datetime, lead_id: str) -> bytes:
         sistema_recomendado=lead.sistema_recomendado,
         price_value=price_value,
         price_currency=price_currency,
+        link_pago=link_pago,
     )
 
     try:

@@ -6,6 +6,7 @@ from app.models.schemas import LeadInput
 from app.services.sheets_service import append_row
 from app.services.pdf_service import generate_proposal_pdf
 from app.services.storage_service import upload_pdf
+from app.services.mercadopago_service import create_preference
 from app.config import GOOGLE_STORAGE_BUCKET
 
 logger = logging.getLogger(__name__)
@@ -18,12 +19,28 @@ async def save_lead(lead: LeadInput):
         fecha = lead.fecha or datetime.now(timezone.utc)
         lead_id = uuid.uuid4().hex[:8].upper()  # e.g. "A3F2B1C9"
 
+        # ── Mercado Pago payment link (non-blocking on failure) ──────────────
+        preference_id = ""
+        link_pago = ""
+        try:
+            mp = create_preference(
+                lead_id,
+                lead.precio_contado_mxn or 0,
+                "Sistema de respaldo de energía WR Energy",
+                lead.nombre,
+            )
+            preference_id = mp["preference_id"]
+            link_pago = mp["link_pago"]
+        except Exception as mp_err:
+            logger.error(f"Mercado Pago preference failed for lead {lead_id}: {mp_err}", exc_info=True)
+            # Lead is saved regardless — never lose a lead over a payment-link error
+
         # ── PDF generation + Drive upload (non-blocking on failure) ──────────
         proposal_url = ""
         try:
             if not GOOGLE_STORAGE_BUCKET:
                 raise ValueError("GOOGLE_STORAGE_BUCKET is not set")
-            pdf_bytes = generate_proposal_pdf(lead, fecha, lead_id)
+            pdf_bytes = generate_proposal_pdf(lead, fecha, lead_id, link_pago)
             safe_name = lead.nombre.replace(" ", "_")[:40]
             filename = f"propuesta_{lead_id}_{safe_name}.pdf"
             proposal_url = upload_pdf(pdf_bytes, filename, GOOGLE_STORAGE_BUCKET)
@@ -69,7 +86,24 @@ async def save_lead(lead: LeadInput):
                 round(item.demanda_w, 2),
             ])
 
-        return {"ok": True, "lead_id": lead_id, "proposal_url": proposal_url}
+        # ── Payment link tracking row (non-blocking on failure) ──────────────
+        # Header (create this sheet yourself before running the backend):
+        # lead_id | preference_id | link_pago | monto_mxn | fecha_generado | estatus_pago | fecha_pago | payment_id
+        try:
+            append_row("links_pago", [
+                lead_id,
+                preference_id,
+                link_pago,
+                round(lead.precio_contado_mxn) if lead.precio_contado_mxn else "",
+                fecha.isoformat(),
+                "pendiente",
+                "",
+                "",
+            ])
+        except Exception as links_err:
+            logger.error(f"links_pago row failed for lead {lead_id}: {links_err}", exc_info=True)
+
+        return {"ok": True, "lead_id": lead_id, "proposal_url": proposal_url, "link_pago": link_pago}
 
     except Exception as e:
         raise HTTPException(status_code=500, detail=str(e))

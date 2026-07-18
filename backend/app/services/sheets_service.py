@@ -230,6 +230,58 @@ def read_station_specs() -> list[dict]:
     return result
 
 
+def _col_letter(index: int) -> str:
+    """0-indexed column number → spreadsheet column letter (0→A, 25→Z, 26→AA, ...)."""
+    letters = ""
+    index += 1
+    while index > 0:
+        index, remainder = divmod(index - 1, 26)
+        letters = chr(65 + remainder) + letters
+    return letters
+
+
+def update_row_by_key(sheet_name: str, key_column: str, key_value: str, updates: dict) -> bool:
+    """
+    Finds the row where key_column == key_value and updates only the columns present
+    in `updates` ({column_name: new_value}), leaving every other cell untouched.
+    Returns True if the row was found and updated, False if key_value wasn't found.
+    """
+    service = _get_service()
+    raw = _get_raw_sheet(sheet_name)
+    if not raw:
+        return False
+
+    headers = raw[0]
+    if key_column not in headers:
+        return False
+    key_idx = headers.index(key_column)
+
+    row_number = None  # 1-indexed sheet row (header is row 1, so data starts at row 2)
+    for i, row in enumerate(raw[1:], start=2):
+        if len(row) > key_idx and row[key_idx] == key_value:
+            row_number = i
+            break
+
+    if row_number is None:
+        return False
+
+    data = []
+    for col_name, value in updates.items():
+        if col_name not in headers:
+            continue
+        col_letter = _col_letter(headers.index(col_name))
+        data.append({"range": f"{sheet_name}!{col_letter}{row_number}", "values": [[value]]})
+
+    if not data:
+        return False
+
+    service.spreadsheets().values().batchUpdate(
+        spreadsheetId=GOOGLE_SHEETS_ID,
+        body={"valueInputOption": "USER_ENTERED", "data": data},
+    ).execute()
+    return True
+
+
 def append_row(sheet_name: str, row: list) -> int:
     service = _get_service()
     result = (

@@ -16,6 +16,13 @@ function getAdPlacementFromURL() {
   return params.get('utm_content') || 'sin_dato'
 }
 
+// Mercado Pago's back_urls all point to ?pago=gracias — landing here means the
+// checkout flow finished (approved/pending/failure all land on the same thank-you screen).
+function hasPagoGraciasParam() {
+  const params = new URLSearchParams(window.location.search)
+  return params.get('pago') === 'gracias'
+}
+
 export function CalculatorProvider({ children }) {
   const [selections, setSelections] = useState({}) // { [equipo]: cantidad }
   const [hoursBackup, setHoursBackup] = useState(4)
@@ -24,8 +31,11 @@ export function CalculatorProvider({ children }) {
   // Assigned once at session start; stays fixed for the lifetime of the provider
   const [entryPoint] = useState(() => getEntryPointFromURL())
   const [adPlacement] = useState(() => getAdPlacementFromURL())
-  const [currentScreen, setCurrentScreen] = useState(() => (getEntryPointFromURL() === 'directa' ? 1 : 0))
-  const [lead, setLead] = useState({ nombre: '', whatsapp: '', email: '' })
+  const [currentScreen, setCurrentScreen] = useState(() => {
+    if (hasPagoGraciasParam()) return 4
+    return getEntryPointFromURL() === 'directa' ? 1 : 0
+  })
+  const [lead, setLead] = useState({ nombre: '', whatsapp: '' })
   // Assigned once at session start; stays fixed for the lifetime of the provider
   const [abTestGroup] = useState(() => (Math.random() < 0.5 ? 'pdf' : 'call'))
 

@@ -1,7 +1,8 @@
 // Constants — should eventually come from the 'parametros' Google Sheet tab
 const TC = 17.5
-const MARGEN_CONTADO = 0.26
-const MARGEN_MSI = 0.31
+// Single margin for both cash and MSI — no more cash discount, contado and the
+// pre-/12 MSI base now land on the same total.
+const MARGEN = 0.30
 const IVA = 1.16
 const MATERIAL_PCT = 0.20
 const ENVIO_USD = 200
@@ -12,13 +13,12 @@ export function calcPricing(usdEquipo, totalDemandW) {
   const aplica = totalDemandW / 1000 >= UMBRAL_KW
   const material = aplica ? usdEquipo * MATERIAL_PCT : 0
   const costoMxn = (usdEquipo + material + ENVIO_USD) * TC
-  const contado = (costoMxn / (1 - MARGEN_CONTADO)) * IVA
-  const msi = (costoMxn / (1 - MARGEN_MSI)) * IVA
+  const contado = (costoMxn / (1 - MARGEN)) * IVA
   return {
     contado: Math.round(contado),
     anticipo: Math.round(contado * ANTICIPO_PCT),
     saldo: Math.round(contado * (1 - ANTICIPO_PCT)),
-    mensualidad: Math.round(msi / 12),
+    mensualidad: Math.round(contado / 12),
     aplica,
   }
 }
